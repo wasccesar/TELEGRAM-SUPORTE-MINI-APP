@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Suporte - Achadinhos Digitais</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  /* ===== RESET & BASE ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --bg-deep:    #080d1a;
+    --bg-card:    rgba(255,255,255,0.04);
+    --bg-input:   rgba(255,255,255,0.07);
+    --border:     rgba(255,255,255,0.08);
+    --border-glow:rgba(99,179,237,0.25);
+    --blue:       #3b82f6;
+    --blue-light: #60a5fa;
+    --blue-dim:   rgba(59,130,246,0.15);
+    --green:      #22c55e;
+    --green-dim:  rgba(34,197,94,0.15);
+    --red:        #ef4444;
+    --yellow:     #f59e0b;
+    --text-1:     #f0f4ff;
+    --text-2:     #8fa3c8;
+    --text-3:     #4d6080;
+    --bubble-me:  #1d4ed8;
+    --bubble-other: rgba(255,255,255,0.07);
+    --radius:     16px;
+    --radius-sm:  10px;
+    --radius-xs:  6px;
+    --shadow:     0 8px 32px rgba(0,0,0,0.4);
+    --transition: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg-deep);
+    color: var(--text-1);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== BACKGROUND ===== */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% -20%, rgba(59,130,246,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 110%, rgba(34,197,94,0.08) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== APP SHELL ===== */
+  #app {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  /* ===== VIEWS ===== */
+  .view {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s var(--transition), transform 0.3s var(--transition);
+    transform: translateX(30px);
+  }
+  .view.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(0);
+  }
+  .view.slide-out {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,13,26,0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .header-back {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    flex-shrink: 0;
+    color: var(--text-1);
+  }
+  .header-back:active { transform: scale(0.92); background: rgba(255,255,255,0.1); }
+  .header-info { flex: 1; min-width: 0; }
+  .header-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+  }
+  .header-sub {
+    font-size: 12px;
+    color: var(--text-2);
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .online-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .header-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), #7c3aed);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ===== LOGO VIEW ===== */
+  #view-loading {
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  .logo-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #1d4ed8, var(--blue));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    box-shadow: 0 16px 40px rgba(59,130,246,0.35);
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-1);
+  }
+  .logo-sub { font-size: 13px; color: var(--text-2); }
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 2.5px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== TICKET LIST VIEW ===== */
+  #view-list { display: flex; flex-direction: column; }
+
+  .list-header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .list-header-logo .logo-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1d4ed8, var(--blue));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 6px;
+    padding: 10px 16px 0;
+    flex-shrink: 0;
+  }
+  .tab {
+    flex: 1;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .tab.active {
+    background: var(--blue-dim);
+    border-color: var(--border-glow);
+    color: var(--blue-light);
+  }
+
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px 80px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-area::-webkit-scrollbar { width: 0; }
+
+  /* ===== TICKET CARD ===== */
+  .ticket-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .ticket-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+  }
+  .ticket-card.status-open::before { background: var(--red); }
+  .ticket-card.status-in_progress::before { background: var(--yellow); }
+  .ticket-card.status-resolved::before, .ticket-card.status-closed::before { background: var(--green); }
+  .ticket-card:active { transform: scale(0.98); background: rgba(255,255,255,0.06); }
+
+  .ticket-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .ticket-cat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+  }
+  .ticket-status-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .badge-open { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .badge-in_progress { background: rgba(245,158,11,0.15); color: #fde68a; }
+  .badge-resolved, .badge-closed { background: var(--green-dim); color: #86efac; }
+
+  .ticket-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-2);
+    margin-bottom: 8px;
+  }
+  .ticket-preview {
+    font-size: 13px;
+    color: var(--text-2);
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ===== FAB ===== */
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1d4ed8, var(--blue));
+    border: none;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(59,130,246,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    z-index: 100;
+  }
+  .fab:active { transform: scale(0.92); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+
+  /* ===== NEW TICKET VIEW ===== */
+  #view-new { display: flex; flex-direction: column; }
+
+  .form-section { padding: 16px; }
+  .form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+  }
+  .cat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .cat-btn {
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .cat-btn.selected {
+    border-color: var(--border-glow);
+    background: var(--blue-dim);
+    color: var(--blue-light);
+  }
+  .cat-btn .cat-emoji { font-size: 20px; }
+
+  .textarea-wrap {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    transition: border-color 0.2s;
+  }
+  .textarea-wrap:focus-within { border-color: var(--border-glow); }
+  .textarea-wrap textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-1);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    resize: none;
+    min-height: 100px;
+    line-height: 1.5;
+  }
+  .textarea-wrap textarea::placeholder { color: var(--text-3); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #1d4ed8, var(--blue));
+    border: none;
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    margin-top: 12px;
+  }
+  .btn-primary:disabled { opacity: 0.5; }
+  .btn-primary:active:not(:disabled) { transform: scale(0.98); }
+
+  /* ===== CHAT VIEW ===== */
+  #view-chat { display: flex; flex-direction: column; background: var(--bg-deep); }
+
+  .chat-info-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--blue-dim);
+    border-bottom: 1px solid var(--border-glow);
+    font-size: 12px;
+    color: var(--blue-light);
+    flex-shrink: 0;
+  }
+
+  .messages-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .messages-area::-webkit-scrollbar { width: 0; }
+
+  /* ===== MESSAGE BUBBLES ===== */
+  .msg-group { display: flex; flex-direction: column; gap: 2px; }
+  .msg-group.mine { align-items: flex-end; }
+  .msg-group.theirs { align-items: flex-start; }
+
+  .msg-sender {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+    margin-bottom: 3px;
+    padding: 0 4px;
+  }
+  .msg-group.mine .msg-sender { color: rgba(147,197,253,0.7); }
+  .msg-group.theirs .msg-sender { color: rgba(134,239,172,0.7); }
+
+  .bubble {
+    max-width: 78%;
+    padding: 9px 13px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.45;
+    position: relative;
+    word-break: break-word;
+    animation: bubble-in 0.2s var(--transition) both;
+  }
+  @keyframes bubble-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.95); }
+    to { opacity: 1; transform: none; }
+  }
+  .msg-group.mine .bubble {
+    background: linear-gradient(135deg, #1d4ed8, var(--blue));
+    color: white;
+    border-bottom-right-radius: 5px;
+    box-shadow: 0 4px 16px rgba(59,130,246,0.3);
+  }
+  .msg-group.theirs .bubble {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-1);
+    border-bottom-left-radius: 5px;
+  }
+  .bubble-time {
+    font-size: 10px;
+    opacity: 0.6;
+    margin-top: 3px;
+    text-align: right;
+  }
+  .msg-group.theirs .bubble-time { text-align: left; }
+
+  .bubble img {
+    max-width: 100%;
+    border-radius: 10px;
+    display: block;
+  }
+
+  /* ===== DATE SEPARATOR ===== */
+  .date-sep {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0;
+    font-size: 11px;
+    color: var(--text-3);
+  }
+  .date-sep::before, .date-sep::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ===== TICKET INFO BAR ===== */
+  .ticket-info-card {
+    margin: 6px 14px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--text-2);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px 12px;
+  }
+  .ticket-info-card .info-item { display: flex; align-items: center; gap: 5px; }
+  .ticket-info-card .info-item span { color: var(--text-1); font-weight: 500; }
+
+  /* ===== INPUT BAR ===== */
+  .input-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 10px 12px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: rgba(8,13,26,0.9);
+    backdrop-filter: blur(20px);
+    flex-shrink: 0;
+  }
+  .input-wrap {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 9px 14px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    transition: border-color 0.2s;
+    min-height: 42px;
+  }
+  .input-wrap:focus-within { border-color: var(--border-glow); }
+  .input-field {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-1);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    resize: none;
+    max-height: 100px;
+    overflow-y: auto;
+    line-height: 1.4;
+  }
+  .input-field::placeholder { color: var(--text-3); }
+  .input-field::-webkit-scrollbar { width: 0; }
+
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+  .btn-icon:active { background: var(--bg-input); color: var(--blue-light); }
+
+  .btn-send {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #1d4ed8, var(--blue));
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(59,130,246,0.4);
+    font-size: 17px;
+  }
+  .btn-send:active { transform: scale(0.9); }
+  .btn-send:disabled { opacity: 0.4; box-shadow: none; }
+
+  /* ===== ATTENDANT ACTIONS ===== */
+  .atd-actions {
+    display: flex;
+    gap: 8px;
+    padding: 8px 14px;
+    flex-shrink: 0;
+  }
+  .btn-action {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-1);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .btn-action.take { border-color: var(--border-glow); background: var(--blue-dim); color: var(--blue-light); }
+  .btn-action.resolve { border-color: rgba(34,197,94,0.3); background: var(--green-dim); color: #86efac; }
+  .btn-action:active { transform: scale(0.97); }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    text-align: center;
+  }
+  .empty-icon { font-size: 48px; opacity: 0.4; }
+  .empty-title { font-size: 17px; font-weight: 600; color: var(--text-2); }
+  .empty-sub { font-size: 13px; color: var(--text-3); }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(30,40,60,0.95);
+    border: 1px solid var(--border);
+    color: var(--text-1);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    backdrop-filter: blur(20px);
+    z-index: 999;
+    opacity: 0;
+    transition: all 0.25s var(--transition);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ===== FILE INPUT ===== */
+  #file-input { display: none; }
+
+  /* ===== PHOTO PREVIEW ===== */
+  .photo-preview-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-top: 1px solid var(--border);
+    background: rgba(8,13,26,0.9);
+    flex-shrink: 0;
+  }
+  .photo-preview-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+  }
+  .photo-preview-info { flex: 1; font-size: 12px; color: var(--text-2); }
+  .photo-preview-remove {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(239,68,68,0.15);
+    border: none;
+    color: #fca5a5;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- VIEW: LOADING -->
+  <div id="view-loading" class="view active">
+    <div class="logo-icon">🎧</div>
+    <div class="logo-text">Suporte</div>
+    <div class="logo-sub">Achadinhos Digitais</div>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- VIEW: TICKET LIST -->
+  <div id="view-list" class="view">
+    <div class="header">
+      <div class="list-header-logo">
+        <div class="logo-sm">🎧</div>
+      </div>
+      <div class="header-info">
+        <div class="header-title" id="list-title">Meus Tickets</div>
+        <div class="header-sub" id="list-sub">Suporte Achadinhos Digitais</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-status="open" onclick="changeTab(this)">🔴 Abertos</button>
+      <button class="tab" data-status="in_progress" onclick="changeTab(this)">🟡 Em atendimento</button>
+      <button class="tab" data-status="resolved" onclick="changeTab(this)">🟢 Resolvidos</button>
+    </div>
+
+    <div class="scroll-area" id="ticket-list-area">
+      <div class="empty-state">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <button class="fab" id="fab-new" onclick="showView('new')" title="Novo ticket">＋</button>
+  </div>
+
+  <!-- VIEW: NEW TICKET -->
+  <div id="view-new" class="view">
+    <div class="header">
+      <button class="header-back" onclick="showView('list')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <div class="header-info">
+        <div class="header-title">Novo Chamado</div>
+        <div class="header-sub">Descreva seu problema</div>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <div class="form-section">
+        <div class="form-label">Categoria do problema</div>
+        <div class="cat-grid">
+          <button class="cat-btn" data-cat="produto" onclick="selectCat(this)">
+            <span class="cat-emoji">📦</span>Produto
+          </button>
+          <button class="cat-btn" data-cat="pagamento" onclick="selectCat(this)">
+            <span class="cat-emoji">💳</span>Pagamento
+          </button>
+          <button class="cat-btn" data-cat="tecnico" onclick="selectCat(this)">
+            <span class="cat-emoji">⚙️</span>Técnico
+          </button>
+          <button class="cat-btn" data-cat="outro" onclick="selectCat(this)">
+            <span class="cat-emoji">❓</span>Outro
+          </button>
+        </div>
+
+        <div class="form-label">Descreva o problema</div>
+        <div class="textarea-wrap">
+          <textarea id="new-desc" placeholder="Explique o que aconteceu com o máximo de detalhes..." rows="4"></textarea>
+        </div>
+
+        <button class="btn-primary" id="btn-create" onclick="createTicket()" disabled>
+          Abrir Chamado
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW: CHAT -->
+  <div id="view-chat" class="view">
+    <div class="header">
+      <button class="header-back" onclick="leaveChat()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <div class="header-avatar" id="chat-avatar">🎧</div>
+      <div class="header-info">
+        <div class="header-title" id="chat-title">Suporte</div>
+        <div class="header-sub" id="chat-sub">
+          <span class="online-dot"></span>
+          <span>Online agora</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info do ticket -->
+    <div class="ticket-info-card" id="ticket-info-card"></div>
+
+    <!-- Área de mensagens -->
+    <div class="messages-area" id="messages-area"></div>
+
+    <!-- Ações do atendente -->
+    <div class="atd-actions" id="atd-actions" style="display:none"></div>
+
+    <!-- Preview de foto -->
+    <div class="photo-preview-bar" id="photo-preview-bar" style="display:none">
+      <img id="photo-preview-thumb" class="photo-preview-thumb" src="" alt="">
+      <div class="photo-preview-info">Foto selecionada</div>
+      <button class="photo-preview-remove" onclick="removePhoto()">✕</button>
+    </div>
+
+    <!-- Barra de input -->
+    <div class="input-bar" id="input-bar">
+      <div class="input-wrap">
+        <textarea
+          class="input-field"
+          id="msg-input"
+          placeholder="Digite sua mensagem..."
+          rows="1"
+          oninput="autoResize(this); updateSendBtn()"
+          onkeydown="handleEnter(event)"
+        ></textarea>
+        <button class="btn-icon" onclick="triggerPhoto()" title="Foto">
+          📷
+        </button>
+      </div>
+      <button class="btn-send" id="btn-send" onclick="sendMessage()" disabled>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+
+    <input type="file" id="file-input" accept="image/*" onchange="onPhotoSelected(event)">
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== CONFIG =====
+const API_BASE = 'https://SEU_BOT_URL.squarecloud.app/api'; // ← SUBSTITUA PELA SUA URL
+
+// ===== STATE =====
+let tg = window.Telegram.WebApp;
+let tgUser = null;
+let userRole = 'client'; // 'client' | 'attendant'
+let currentTicketId = null;
+let currentTicket = null;
+let pollInterval = null;
+let selectedCat = null;
+let selectedPhoto = null; // { file, dataUrl, base64 }
+let activeTab = 'open';
+let lastMsgCount = 0;
+let isAtBottom = true;
+
+// ===== INIT =====
+tg.ready();
+tg.expand();
+
+// Apply Telegram theme colors
+document.documentElement.style.setProperty('--tg-theme-bg', tg.colorScheme === 'dark' ? '#080d1a' : '#080d1a');
+
+async function init() {
+  try {
+    tgUser = tg.initDataUnsafe?.user;
+    if (!tgUser?.id) {
+      // Dev fallback
+      tgUser = { id: 12345, first_name: 'Teste', last_name: '' };
+    }
+
+    const res = await apiGet(`/init?userId=${tgUser.id}&initData=${encodeURIComponent(tg.initData || '')}`);
+    userRole = res.role || 'client';
+
+    if (userRole === 'attendant') {
+      document.getElementById('list-title').textContent = 'Painel de Atendimento';
+      document.getElementById('list-sub').textContent = 'Todos os tickets';
+      document.getElementById('fab-new').style.display = 'none';
+    }
+
+    showView('list');
+    loadTickets();
+  } catch (e) {
+    showToast('❌ Erro ao conectar. Tente novamente.');
+    console.error(e);
+  }
+}
+
+// ===== API =====
+async function apiGet(path) {
+  const r = await fetch(API_BASE + path);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+async function apiPost(path, body) {
+  const r = await fetch(API_BASE + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+// ===== NAVIGATION =====
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => {
+    v.classList.remove('active', 'slide-out');
+    v.classList.add('slide-out');
+    setTimeout(() => v.classList.remove('slide-out'), 300);
+  });
+  const el = document.getElementById('view-' + name);
+  el.classList.remove('slide-out');
+  el.classList.add('active');
+}
+
+// ===== TABS =====
+function changeTab(btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  activeTab = btn.dataset.status;
+  loadTickets();
+}
+
+// ===== TICKET LIST =====
+async function loadTickets() {
+  const area = document.getElementById('ticket-list-area');
+  area.innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
+
+  try {
+    const data = await apiGet(`/tickets?userId=${tgUser.id}&role=${userRole}&status=${activeTab}`);
+    const tickets = data.tickets || [];
+
+    if (tickets.length === 0) {
+      area.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <div class="empty-title">Nenhum ticket aqui</div>
+          <div class="empty-sub">${userRole === 'client' ? 'Toque em + para abrir um chamado' : 'Tudo tranquilo por aqui'}</div>
+        </div>`;
+      return;
+    }
+
+    area.innerHTML = tickets.map(t => renderCard(t)).join('');
+  } catch (e) {
+    area.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Erro ao carregar</div><div class="empty-sub">Verifique sua conexão</div></div>`;
+  }
+}
+
+function renderCard(t) {
+  const cats = { produto:'📦 Produto', pagamento:'💳 Pagamento', tecnico:'⚙️ Técnico', outro:'❓ Outro' };
+  const statusLabel = { open:'Aguardando', in_progress:'Em atendimento', resolved:'Resolvido', closed:'Fechado' };
+  const badgeClass = { open:'badge-open', in_progress:'badge-in_progress', resolved:'badge-resolved', closed:'badge-closed' };
+  const date = new Date(t.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  const preview = t.last_message ? (t.last_message.length > 48 ? t.last_message.slice(0,48)+'…' : t.last_message) : '';
+
+  return `
+  <div class="ticket-card status-${t.status}" onclick="openTicket('${t.id}')">
+    <div class="ticket-card-header">
+      <div class="ticket-cat">${cats[t.category] || '❓ Outro'}</div>
+      <div class="ticket-status-badge ${badgeClass[t.status] || 'badge-open'}">${statusLabel[t.status] || t.status}</div>
+    </div>
+    <div class="ticket-meta">
+      <span>🕐 ${date}</span>
+      <span>💬 ${t.messages_count || 0} msgs</span>
+      ${userRole === 'attendant' ? `<span>🆔 ${t.user_id}</span>` : ''}
+    </div>
+    ${preview ? `<div class="ticket-preview">"${preview}"</div>` : ''}
+  </div>`;
+}
+
+// ===== OPEN TICKET =====
+async function openTicket(ticketId) {
+  currentTicketId = ticketId;
+  lastMsgCount = 0;
+
+  showView('chat');
+  document.getElementById('messages-area').innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
+  document.getElementById('ticket-info-card').innerHTML = '';
+  document.getElementById('atd-actions').style.display = 'none';
+
+  await loadTicketChat();
+  startPolling();
+}
+
+async function loadTicketChat() {
+  try {
+    const data = await apiGet(`/ticket/${currentTicketId}?userId=${tgUser.id}&role=${userRole}`);
+    currentTicket = data.ticket;
+    renderChat(currentTicket);
+  } catch (e) {
+    showToast('❌ Erro ao carregar ticket');
+  }
+}
+
+function renderChat(ticket) {
+  const cats = { produto:'📦 Produto', pagamento:'💳 Pagamento', tecnico:'⚙️ Técnico', outro:'❓ Outro' };
+  const statusLabel = { open:'Aguardando atendente', in_progress:'Em atendimento 🟡', resolved:'✅ Resolvido', closed:'⚫ Fechado' };
+
+  // Header
+  const catIcon = { produto:'📦', pagamento:'💳', tecnico:'⚙️', outro:'❓' };
+  document.getElementById('chat-avatar').textContent = catIcon[ticket.category] || '🎧';
+  document.getElementById('chat-title').textContent = cats[ticket.category] || 'Suporte';
+
+  // Info card
+  const openedAt = new Date(ticket.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  document.getElementById('ticket-info-card').innerHTML = `
+    <div class="info-item">🎫 <span>${ticket.id.replace('TICKET_','').replace('_',' ')}</span></div>
+    <div class="info-item">📋 <span>${statusLabel[ticket.status] || ticket.status}</span></div>
+    <div class="info-item">📅 <span>${openedAt}</span></div>
+    ${userRole === 'attendant' ? `<div class="info-item">🆔 <span>${ticket.user_id}</span></div>` : ''}
+    ${ticket.description ? `<div class="info-item" style="grid-column:1/-1">💬 <span style="font-style:italic">${ticket.description.slice(0,60)}${ticket.description.length>60?'…':''}</span></div>` : ''}
+  `;
+
+  // Render messages
+  const area = document.getElementById('messages-area');
+  const msgs = ticket.messages || [];
+  const shouldScroll = msgs.length !== lastMsgCount;
+  lastMsgCount = msgs.length;
+
+  if (msgs.length === 0) {
+    area.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div><div class="empty-title">Sem mensagens</div><div class="empty-sub">Comece a conversa abaixo</div></div>`;
+  } else {
+    let html = '';
+    let prevFrom = null;
+    let prevDate = null;
+
+    msgs.forEach((m, i) => {
+      const isMe = String(m.from) === String(tgUser.id);
+      const fromChanged = m.from !== prevFrom;
+      const msgDate = new Date(m.timestamp).toLocaleDateString('pt-BR');
+      const msgTime = new Date(m.timestamp).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+
+      if (msgDate !== prevDate) {
+        if (i > 0) html += '</div>';
+        html += `<div class="date-sep">${msgDate === new Date().toLocaleDateString('pt-BR') ? 'Hoje' : msgDate}</div>`;
+        prevFrom = null;
+      }
+
+      if (fromChanged || i === 0 || msgDate !== prevDate) {
+        if (i > 0 && prevFrom !== null && msgDate === new Date(msgs[i-1]?.timestamp).toLocaleDateString('pt-BR')) html += '</div>';
+        const senderLabel = isMe
+          ? (userRole === 'attendant' ? '🧑‍💼 Você' : '🧑 Você')
+          : (userRole === 'client' ? '🧑‍💼 Atendente' : `🧑 ${ticket.user_id}`);
+        html += `<div class="msg-group ${isMe ? 'mine' : 'theirs'}"><div class="msg-sender">${senderLabel}</div>`;
+      }
+
+      if (m.photo_id) {
+        html += `<div class="bubble">📷 <em>Imagem enviada</em><div class="bubble-time">${msgTime}</div></div>`;
+      } else {
+        html += `<div class="bubble">${escapeHtml(m.text)}<div class="bubble-time">${msgTime}</div></div>`;
+      }
+
+      prevFrom = m.from;
+      prevDate = msgDate;
+    });
+    html += '</div>';
+    area.innerHTML = html;
+  }
+
+  // Attendant actions
+  const atdDiv = document.getElementById('atd-actions');
+  if (userRole === 'attendant') {
+    atdDiv.style.display = 'flex';
+    if (ticket.status === 'open') {
+      atdDiv.innerHTML = `<button class="btn-action take" onclick="takeTicket()">🎯 Pegar este Ticket</button>`;
+      document.getElementById('input-bar').style.display = 'none';
+    } else if (ticket.status === 'in_progress' && String(ticket.assigned_to) === String(tgUser.id)) {
+      atdDiv.innerHTML = `<button class="btn-action resolve" onclick="resolveTicket()">✅ Marcar Resolvido</button>`;
+      document.getElementById('input-bar').style.display = 'flex';
+    } else {
+      atdDiv.style.display = 'none';
+      document.getElementById('input-bar').style.display = String(ticket.assigned_to) === String(tgUser.id) ? 'flex' : 'none';
+    }
+  } else {
+    // Client
+    const canChat = ticket.status === 'open' || ticket.status === 'in_progress';
+    document.getElementById('input-bar').style.display = canChat ? 'flex' : 'none';
+    if (!canChat) {
+      atdDiv.style.display = 'flex';
+      atdDiv.innerHTML = ticket.status === 'resolved'
+        ? `<button class="btn-action" onclick="rateTicket()">⭐ Avaliar Atendimento</button>`
+        : '';
+    }
+  }
+
+  if (shouldScroll) scrollToBottom();
+}
+
+function scrollToBottom() {
+  const area = document.getElementById('messages-area');
+  setTimeout(() => area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' }), 50);
+}
+
+// ===== POLLING =====
+function startPolling() {
+  stopPolling();
+  pollInterval = setInterval(async () => {
+    if (currentTicketId) {
+      try {
+        const data = await apiGet(`/ticket/${currentTicketId}?userId=${tgUser.id}&role=${userRole}`);
+        if (data.ticket.messages.length !== lastMsgCount) {
+          currentTicket = data.ticket;
+          renderChat(currentTicket);
+        }
+      } catch(e) {}
+    }
+  }, 2500);
+}
+
+function stopPolling() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+function leaveChat() {
+  stopPolling();
+  currentTicketId = null;
+  currentTicket = null;
+  showView('list');
+  loadTickets();
+}
+
+// ===== SEND MESSAGE =====
+async function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text && !selectedPhoto) return;
+
+  const btn = document.getElementById('btn-send');
+  btn.disabled = true;
+
+  try {
+    await apiPost(`/ticket/${currentTicketId}/message`, {
+      userId: tgUser.id,
+      userName: tgUser.first_name || 'Usuário',
+      text: text || null,
+      photo: selectedPhoto ? selectedPhoto.base64 : null,
+      role: userRole,
+      initData: tg.initData || ''
+    });
+
+    input.value = '';
+    input.style.height = 'auto';
+    removePhoto();
+    updateSendBtn();
+
+    // Show sent toast
+    showToast('✅ Enviado!', 1500);
+
+    // Reload
+    await loadTicketChat();
+  } catch (e) {
+    showToast('❌ Erro ao enviar');
+  }
+
+  btn.disabled = false;
+}
+
+function handleEnter(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function updateSendBtn() {
+  const input = document.getElementById('msg-input');
+  document.getElementById('btn-send').disabled = !input.value.trim() && !selectedPhoto;
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+// ===== PHOTO =====
+function triggerPhoto() {
+  document.getElementById('file-input').click();
+}
+
+function onPhotoSelected(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    const base64 = dataUrl.split(',')[1];
+    selectedPhoto = { file, dataUrl, base64 };
+
+    document.getElementById('photo-preview-thumb').src = dataUrl;
+    document.getElementById('photo-preview-bar').style.display = 'flex';
+    document.getElementById('btn-send').disabled = false;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function removePhoto() {
+  selectedPhoto = null;
+  document.getElementById('photo-preview-bar').style.display = 'none';
+  updateSendBtn();
+}
+
+// ===== ATTENDANT ACTIONS =====
+async function takeTicket() {
+  try {
+    await apiPost(`/ticket/${currentTicketId}/take`, {
+      userId: tgUser.id,
+      userName: tgUser.first_name || 'Atendente',
+      initData: tg.initData || ''
+    });
+    showToast('✅ Ticket pegado!');
+    await loadTicketChat();
+  } catch (e) { showToast('❌ Erro ao pegar ticket'); }
+}
+
+async function resolveTicket() {
+  if (!confirm('Marcar este ticket como resolvido?')) return;
+  try {
+    await apiPost(`/ticket/${currentTicketId}/resolve`, {
+      userId: tgUser.id,
+      initData: tg.initData || ''
+    });
+    showToast('✅ Ticket resolvido!');
+    await loadTicketChat();
+  } catch (e) { showToast('❌ Erro ao resolver'); }
+}
+
+function rateTicket() {
+  showToast('⭐ Função disponível no bot');
+}
+
+// ===== NEW TICKET =====
+function selectCat(btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedCat = btn.dataset.cat;
+  checkCreateBtn();
+}
+
+function checkCreateBtn() {
+  const desc = document.getElementById('new-desc').value.trim();
+  document.getElementById('btn-create').disabled = !selectedCat || !desc;
+}
+
+document.getElementById('new-desc').addEventListener('input', checkCreateBtn);
+
+async function createTicket() {
+  const desc = document.getElementById('new-desc').value.trim();
+  if (!selectedCat || !desc) return;
+
+  const btn = document.getElementById('btn-create');
+  btn.disabled = true;
+  btn.textContent = 'Criando…';
+
+  try {
+    const data = await apiPost('/ticket', {
+      userId: tgUser.id,
+      userName: tgUser.first_name || 'Usuário',
+      category: selectedCat,
+      description: desc,
+      initData: tg.initData || ''
+    });
+
+    showToast('✅ Chamado aberto!');
+    document.getElementById('new-desc').value = '';
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+    selectedCat = null;
+    checkCreateBtn();
+
+    // Open the new ticket
+    setTimeout(() => openTicket(data.ticketId), 800);
+  } catch (e) {
+    showToast('❌ Erro ao criar chamado');
+    btn.disabled = false;
+    btn.textContent = 'Abrir Chamado';
+  }
+}
+
+// ===== UTILS =====
+function showToast(msg, duration = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// ===== START =====
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
