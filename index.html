@@ -686,7 +686,7 @@ function clRenderChat(t) {
     const md=new Date(m.timestamp).toLocaleDateString('pt-BR');
     const mt=new Date(m.timestamp).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     if(md!==pDate){if(gOpen){html+='</div>';gOpen=false;}html+=`<div class="cl-datesep"><div class="cl-datelabel">${md===new Date().toLocaleDateString('pt-BR')?'Hoje':md}</div></div>`;pFrom=null;pDate=md;}
-    if(m.from!==pFrom){if(gOpen)html+='</div>';const who=isMe?'Você':(t.assigned_name||'Atendente');html+=`<div class="cl-bgroup ${isMe?'mine':'theirs'}"><div class="cl-bname">${who}</div>`;gOpen=true;pFrom=m.from;}
+    if(m.from!==pFrom){if(gOpen)html+='</div>';const who=isMe?`${userData.name||TGU.first_name||'Você'}`:`${m.from_name||t.assigned_name||'Atendente'}`;html+=`<div class="cl-bgroup ${isMe?'mine':'theirs'}"><div class="cl-bname">${who}</div>`;gOpen=true;pFrom=m.from;}
     html+=`<div class="cl-bubble">${m.photo_id?'📷 <em>Imagem</em>':esc(m.text)}<span class="cl-btime">${mt}</span></div>`;
   });
   if(gOpen)html+='</div>';
@@ -834,7 +834,7 @@ function atRenderChat(t){
       const md=new Date(m.timestamp).toLocaleDateString('pt-BR');
       const mt=new Date(m.timestamp).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       if(md!==pDate){if(gOpen){html+='</div>';gOpen=false;}html+=`<div class="at-datesep">${md===new Date().toLocaleDateString('pt-BR')?'Hoje':md}</div>`;pFrom=null;pDate=md;}
-      if(m.from!==pFrom){if(gOpen)html+='</div>';const who=isMe?'🧑‍💼 Você':`🧑 ${t.user_name||'Cliente'}`;html+=`<div class="at-bgroup ${isMe?'mine':'theirs'}"><div class="at-bname">${who}</div>`;gOpen=true;pFrom=m.from;}
+      if(m.from!==pFrom){if(gOpen)html+='</div>';const who=isMe?`🧑‍💼 ${userData.name||TGU.first_name||'Você'}`:`🧑 ${m.from_name||t.user_name||'Cliente'}`;html+=`<div class="at-bgroup ${isMe?'mine':'theirs'}"><div class="at-bname">${who}</div>`;gOpen=true;pFrom=m.from;}
       html+=`<div class="at-bubble">${m.photo_id?'📷 <em>Imagem</em>':esc(m.text)}<span class="at-btime">${mt}</span></div>`;
     });
     if(gOpen)html+='</div>';
