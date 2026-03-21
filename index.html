@@ -3,1316 +3,735 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Suporte - Achadinhos Digitais</title>
+<title>Suporte — Achadinhos Digitais</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
-  /* ===== RESET & BASE ===== */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  
-  :root {
-    --bg-deep:    #080d1a;
-    --bg-card:    rgba(255,255,255,0.04);
-    --bg-input:   rgba(255,255,255,0.07);
-    --border:     rgba(255,255,255,0.08);
-    --border-glow:rgba(99,179,237,0.25);
-    --blue:       #3b82f6;
-    --blue-light: #60a5fa;
-    --blue-dim:   rgba(59,130,246,0.15);
-    --green:      #22c55e;
-    --green-dim:  rgba(34,197,94,0.15);
-    --red:        #ef4444;
-    --yellow:     #f59e0b;
-    --text-1:     #f0f4ff;
-    --text-2:     #8fa3c8;
-    --text-3:     #4d6080;
-    --bubble-me:  #1d4ed8;
-    --bubble-other: rgba(255,255,255,0.07);
-    --radius:     16px;
-    --radius-sm:  10px;
-    --radius-xs:  6px;
-    --shadow:     0 8px 32px rgba(0,0,0,0.4);
-    --transition: cubic-bezier(0.4, 0, 0.2, 1);
-  }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  html, body {
-    height: 100%;
-    background: var(--bg-deep);
-    color: var(--text-1);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    line-height: 1.5;
-    overflow: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
+:root {
+  --bg:         #0e0618;
+  --bg2:        #160d24;
+  --card:       rgba(255,255,255,0.05);
+  --border:     rgba(255,255,255,0.08);
+  --border-lit: rgba(200,80,255,0.35);
+  --purple:     #a020f0;
+  --pink:       #e040fb;
+  --pink2:      #ff4ecd;
+  --neon:       #d946ef;
+  --green:      #22c55e;
+  --yellow:     #f59e0b;
+  --red:        #ef4444;
+  --text1:      #f5eeff;
+  --text2:      #b08ecc;
+  --text3:      #6b4d85;
+  --radius:     18px;
+  --radius-sm:  12px;
+}
 
-  /* ===== BACKGROUND ===== */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 80% 50% at 20% -20%, rgba(59,130,246,0.12) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 110%, rgba(34,197,94,0.08) 0%, transparent 55%);
-    pointer-events: none;
-    z-index: 0;
-  }
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text1);
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
 
-  /* ===== APP SHELL ===== */
-  #app {
-    position: relative;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    z-index: 1;
-    overflow: hidden;
-  }
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 0%, rgba(160,32,240,0.2) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 90% 100%, rgba(224,64,251,0.15) 0%, transparent 50%);
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: linear-gradient(rgba(160,32,240,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(160,32,240,0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+  pointer-events: none; z-index: 0;
+}
 
-  /* ===== VIEWS ===== */
-  .view {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s var(--transition), transform 0.3s var(--transition);
-    transform: translateX(30px);
-  }
-  .view.active {
-    opacity: 1;
-    pointer-events: all;
-    transform: translateX(0);
-  }
-  .view.slide-out {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
+#app { position: relative; height: 100%; display: flex; flex-direction: column; z-index: 1; overflow: hidden; }
 
-  /* ===== HEADER ===== */
-  .header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px 12px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(8,13,26,0.8);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    flex-shrink: 0;
-    position: relative;
-  }
-  .header-back {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s, transform 0.15s;
-    flex-shrink: 0;
-    color: var(--text-1);
-  }
-  .header-back:active { transform: scale(0.92); background: rgba(255,255,255,0.1); }
-  .header-info { flex: 1; min-width: 0; }
-  .header-title {
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    font-size: 16px;
-    color: var(--text-1);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.2;
-  }
-  .header-sub {
-    font-size: 12px;
-    color: var(--text-2);
-    margin-top: 1px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .online-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-    animation: pulse-dot 2s infinite;
-  }
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-  .header-avatar {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--blue), #7c3aed);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    flex-shrink: 0;
-  }
+.view {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.3s ease;
+  transform: translateX(28px);
+}
+.view.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+.view.out { opacity: 0; transform: translateX(-28px); }
 
-  /* ===== LOGO VIEW ===== */
-  #view-loading {
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-  }
-  .logo-icon {
-    width: 72px;
-    height: 72px;
-    border-radius: 22px;
-    background: linear-gradient(135deg, #1d4ed8, var(--blue));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    box-shadow: 0 16px 40px rgba(59,130,246,0.35);
-    animation: float 3s ease-in-out infinite;
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-  }
-  .logo-text {
-    font-family: 'Syne', sans-serif;
-    font-size: 20px;
-    font-weight: 800;
-    color: var(--text-1);
-  }
-  .logo-sub { font-size: 13px; color: var(--text-2); }
-  .spinner {
-    width: 28px;
-    height: 28px;
-    border: 2.5px solid var(--border);
-    border-top-color: var(--blue);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+/* LOADING */
+#view-loading { align-items: center; justify-content: center; gap: 20px; text-align: center; }
 
-  /* ===== TICKET LIST VIEW ===== */
-  #view-list { display: flex; flex-direction: column; }
+.splash-logo {
+  width: 90px; height: 90px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #7c1dba, #c026d3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px;
+  box-shadow: 0 0 50px rgba(192,38,211,0.55), 0 0 100px rgba(192,38,211,0.2);
+  animation: float 3s ease-in-out infinite;
+  position: relative;
+}
+.splash-logo::before {
+  content: '';
+  position: absolute; inset: -3px;
+  border-radius: 29px;
+  background: conic-gradient(from 0deg, #a020f0, #e040fb, #ff4ecd, #a020f0);
+  z-index: -1;
+  animation: spin 3s linear infinite;
+  opacity: 0.7;
+}
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-  .list-header-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .list-header-logo .logo-sm {
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #1d4ed8, var(--blue));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-  }
+.splash-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 34px;
+  letter-spacing: 3px;
+  background: linear-gradient(90deg, #e040fb, #ff4ecd, #c026d3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+.splash-sub {
+  font-size: 12px;
+  color: var(--text2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: -8px;
+}
+.spinner {
+  width: 30px; height: 30px;
+  border: 2.5px solid rgba(160,32,240,0.2);
+  border-top-color: #e040fb;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
 
-  .tabs {
-    display: flex;
-    gap: 6px;
-    padding: 10px 16px 0;
-    flex-shrink: 0;
-  }
-  .tab {
-    flex: 1;
-    padding: 8px 10px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--bg-card);
-    color: var(--text-2);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-  }
-  .tab.active {
-    background: var(--blue-dim);
-    border-color: var(--border-glow);
-    color: var(--blue-light);
-  }
+/* HEADER */
+.header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(14,6,24,0.88);
+  backdrop-filter: blur(20px);
+  flex-shrink: 0;
+  position: relative;
+}
+.header::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, #c026d3, transparent);
+  opacity: 0.5;
+}
+.btn-back {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(160,32,240,0.12); border: 1px solid var(--border-lit);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s; color: var(--text1); flex-shrink: 0;
+}
+.btn-back:active { transform: scale(0.88); background: rgba(160,32,240,0.28); }
+.h-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, #7c1dba, #c026d3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(192,38,211,0.45);
+}
+.h-info { flex: 1; min-width: 0; }
+.h-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 19px; letter-spacing: 1px;
+  color: var(--text1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.h-sub {
+  font-size: 12px; color: var(--text2);
+  display: flex; align-items: center; gap: 5px;
+  margin-top: 1px; font-weight: 700;
+}
+.dot-online {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
 
-  .scroll-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px 16px 80px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .scroll-area::-webkit-scrollbar { width: 0; }
+/* LIST TOP */
+.list-top {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px 10px; flex-shrink: 0;
+}
+.brand-sm {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: linear-gradient(135deg, #7c1dba, #c026d3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; box-shadow: 0 0 12px rgba(192,38,211,0.4);
+}
+.brand-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px; letter-spacing: 1.5px;
+  background: linear-gradient(90deg, #e040fb, #ff4ecd);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
 
-  /* ===== TICKET CARD ===== */
-  .ticket-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-  .ticket-card::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    border-radius: 3px 0 0 3px;
-  }
-  .ticket-card.status-open::before { background: var(--red); }
-  .ticket-card.status-in_progress::before { background: var(--yellow); }
-  .ticket-card.status-resolved::before, .ticket-card.status-closed::before { background: var(--green); }
-  .ticket-card:active { transform: scale(0.98); background: rgba(255,255,255,0.06); }
+/* TABS */
+.tabs { display: flex; gap: 6px; padding: 0 14px 10px; flex-shrink: 0; overflow-x: auto; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0; padding: 7px 15px; border-radius: 30px;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text2); font-family: 'Nunito', sans-serif;
+  font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.tab.active { border-color: var(--border-lit); background: rgba(160,32,240,0.15); color: #e040fb; }
 
-  .ticket-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-  }
-  .ticket-cat {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-1);
-  }
-  .ticket-status-badge {
-    font-size: 11px;
-    padding: 3px 8px;
-    border-radius: 20px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-  }
-  .badge-open { background: rgba(239,68,68,0.15); color: #fca5a5; }
-  .badge-in_progress { background: rgba(245,158,11,0.15); color: #fde68a; }
-  .badge-resolved, .badge-closed { background: var(--green-dim); color: #86efac; }
+/* SCROLL */
+.scroll-area { flex: 1; overflow-y: auto; padding: 8px 14px 80px; -webkit-overflow-scrolling: touch; }
+.scroll-area::-webkit-scrollbar { width: 0; }
 
-  .ticket-meta {
-    display: flex;
-    gap: 12px;
-    font-size: 12px;
-    color: var(--text-2);
-    margin-bottom: 8px;
-  }
-  .ticket-preview {
-    font-size: 13px;
-    color: var(--text-2);
-    font-style: italic;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+/* TICKET CARD */
+.tcard {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px; margin-bottom: 10px;
+  cursor: pointer; transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+.tcard::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px 0 0 3px;
+}
+.tcard.s-open::before { background: var(--red); box-shadow: 0 0 8px var(--red); }
+.tcard.s-in_progress::before { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+.tcard.s-resolved::before, .tcard.s-closed::before { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.tcard:active { transform: scale(0.98); }
+.tc-row1 { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.tc-cat { font-size: 14px; font-weight: 800; color: var(--text1); display: flex; align-items: center; gap: 6px; }
+.badge { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 20px; }
+.b-open { background: rgba(239,68,68,0.14); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+.b-in_progress { background: rgba(245,158,11,0.14); color: #fde68a; border: 1px solid rgba(245,158,11,0.2); }
+.b-resolved,.b-closed { background: rgba(34,197,94,0.1); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
+.tc-meta { display: flex; gap: 10px; font-size: 12px; color: var(--text2); font-weight: 700; margin-bottom: 6px; }
+.tc-prev { font-size: 13px; color: var(--text3); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* ===== FAB ===== */
-  .fab {
-    position: fixed;
-    bottom: 24px;
-    right: 20px;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #1d4ed8, var(--blue));
-    border: none;
-    color: white;
-    font-size: 22px;
-    cursor: pointer;
-    box-shadow: 0 8px 24px rgba(59,130,246,0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s, box-shadow 0.2s;
-    z-index: 100;
-  }
-  .fab:active { transform: scale(0.92); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+/* FAB */
+.fab {
+  position: fixed; bottom: 22px; right: 18px;
+  width: 58px; height: 58px; border-radius: 50%;
+  background: linear-gradient(135deg, #7c1dba, #c026d3);
+  border: none; color: white; font-size: 26px; cursor: pointer;
+  box-shadow: 0 0 28px rgba(192,38,211,0.55), 0 4px 16px rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; transition: transform 0.2s;
+}
+.fab:active { transform: scale(0.88); }
 
-  /* ===== NEW TICKET VIEW ===== */
-  #view-new { display: flex; flex-direction: column; }
+/* EMPTY */
+.empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 40px; text-align: center; }
+.empty-ico { font-size: 52px; opacity: 0.28; }
+.empty-t { font-size: 17px; font-weight: 800; color: var(--text2); }
+.empty-s { font-size: 13px; color: var(--text3); font-weight: 600; }
 
-  .form-section { padding: 16px; }
-  .form-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-2);
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    margin-bottom: 8px;
-  }
-  .cat-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  .cat-btn {
-    padding: 12px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--bg-card);
-    color: var(--text-2);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-  }
-  .cat-btn.selected {
-    border-color: var(--border-glow);
-    background: var(--blue-dim);
-    color: var(--blue-light);
-  }
-  .cat-btn .cat-emoji { font-size: 20px; }
+/* NEW TICKET */
+.form-scroll { flex: 1; overflow-y: auto; padding: 14px 16px 40px; }
+.form-scroll::-webkit-scrollbar { width: 0; }
+.flabel { font-size: 11px; font-weight: 800; color: var(--text2); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 10px; margin-top: 18px; }
+.flabel:first-child { margin-top: 0; }
+.cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cat-btn {
+  padding: 14px 10px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text2); font-family: 'Nunito', sans-serif;
+  font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.cat-btn .cem { font-size: 22px; }
+.cat-btn.sel { border-color: var(--border-lit); background: rgba(160,32,240,0.15); color: #e040fb; box-shadow: 0 0 16px rgba(160,32,240,0.2); }
+.ibox { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; transition: border-color 0.2s; margin-top: 10px; }
+.ibox:focus-within { border-color: var(--border-lit); }
+.ibox textarea { width: 100%; background: transparent; border: none; outline: none; color: var(--text1); font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 500; resize: none; min-height: 90px; line-height: 1.5; }
+.ibox textarea::placeholder { color: var(--text3); }
+.btn-pri {
+  width: 100%; padding: 14px; border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #7c1dba, #c026d3);
+  border: none; color: white; font-family: 'Nunito', sans-serif;
+  font-size: 15px; font-weight: 900; cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s; margin-top: 14px;
+  box-shadow: 0 0 22px rgba(192,38,211,0.38); letter-spacing: 0.5px;
+}
+.btn-pri:disabled { opacity: 0.38; box-shadow: none; }
+.btn-pri:active:not(:disabled) { transform: scale(0.98); }
 
-  .textarea-wrap {
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px;
-    transition: border-color 0.2s;
-  }
-  .textarea-wrap:focus-within { border-color: var(--border-glow); }
-  .textarea-wrap textarea {
-    width: 100%;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text-1);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    resize: none;
-    min-height: 100px;
-    line-height: 1.5;
-  }
-  .textarea-wrap textarea::placeholder { color: var(--text-3); }
+/* CHAT */
+.tinfo-bar {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 5px 14px;
+  padding: 10px 14px; background: rgba(160,32,240,0.09);
+  border-bottom: 1px solid rgba(160,32,240,0.16);
+  font-size: 12px; color: var(--text2); font-weight: 700; flex-shrink: 0;
+}
+.ir { display: flex; align-items: center; gap: 5px; }
+.ir span { color: var(--text1); font-weight: 800; }
+.ir.full { grid-column: 1/-1; }
 
-  .btn-primary {
-    width: 100%;
-    padding: 14px;
-    border-radius: var(--radius-sm);
-    background: linear-gradient(135deg, #1d4ed8, var(--blue));
-    border: none;
-    color: white;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.15s;
-    margin-top: 12px;
-  }
-  .btn-primary:disabled { opacity: 0.5; }
-  .btn-primary:active:not(:disabled) { transform: scale(0.98); }
+.msgs { flex: 1; overflow-y: auto; padding: 12px 14px 8px; display: flex; flex-direction: column; gap: 4px; -webkit-overflow-scrolling: touch; }
+.msgs::-webkit-scrollbar { width: 0; }
 
-  /* ===== CHAT VIEW ===== */
-  #view-chat { display: flex; flex-direction: column; background: var(--bg-deep); }
+.mgroup { display: flex; flex-direction: column; }
+.mgroup.mine { align-items: flex-end; }
+.mgroup.theirs { align-items: flex-start; }
+.mwho { font-size: 11px; font-weight: 800; margin-bottom: 3px; padding: 0 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+.mgroup.mine .mwho { color: rgba(224,64,251,0.6); }
+.mgroup.theirs .mwho { color: rgba(34,197,94,0.7); }
+.bbl {
+  max-width: 80%; padding: 9px 13px; border-radius: 18px;
+  font-size: 14px; line-height: 1.45; word-break: break-word;
+  animation: pop 0.2s ease both;
+}
+@keyframes pop { from{opacity:0;transform:translateY(10px) scale(0.93)} to{opacity:1;transform:none} }
+.mgroup.mine .bbl { background: linear-gradient(135deg, #7c1dba, #c026d3); color: white; border-bottom-right-radius: 5px; box-shadow: 0 4px 18px rgba(192,38,211,0.38); }
+.mgroup.theirs .bbl { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.09); color: var(--text1); border-bottom-left-radius: 5px; }
+.btime { font-size: 10px; opacity: 0.55; margin-top: 4px; font-weight: 700; }
+.mgroup.mine .btime { text-align: right; }
+.datesep { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 11px; color: var(--text3); font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; }
+.datesep::before,.datesep::after { content:''; flex:1; height:1px; background:var(--border); }
 
-  .chat-info-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    background: var(--blue-dim);
-    border-bottom: 1px solid var(--border-glow);
-    font-size: 12px;
-    color: var(--blue-light);
-    flex-shrink: 0;
-  }
+/* INPUT */
+.ibar {
+  display: flex; align-items: flex-end; gap: 8px;
+  padding: 10px 12px; padding-bottom: max(10px,env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: rgba(14,6,24,0.93); backdrop-filter: blur(20px); flex-shrink: 0;
+  position: relative;
+}
+.ibar::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg,transparent,rgba(160,32,240,0.55),transparent); }
+.iwrap {
+  flex: 1; background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+  border-radius: 22px; padding: 9px 14px; display: flex; align-items: flex-end;
+  gap: 6px; transition: border-color 0.2s; min-height: 42px;
+}
+.iwrap:focus-within { border-color: var(--border-lit); }
+.ifield {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text1); font-family: 'Nunito', sans-serif;
+  font-size: 14px; font-weight: 500; resize: none; max-height: 100px; overflow-y: auto; line-height: 1.4;
+}
+.ifield::placeholder { color: var(--text3); }
+.ifield::-webkit-scrollbar { width: 0; }
+.bico { width: 32px; height: 32px; border-radius: 50%; background: transparent; border: none; color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 17px; transition: color 0.15s; }
+.bico:active { color: #e040fb; }
+.bsend {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, #7c1dba, #c026d3);
+  border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; box-shadow: 0 0 20px rgba(192,38,211,0.5); transition: transform 0.15s, opacity 0.15s; flex-shrink: 0;
+}
+.bsend:active { transform: scale(0.88); }
+.bsend:disabled { opacity: 0.35; box-shadow: none; }
 
-  .messages-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px 14px 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .messages-area::-webkit-scrollbar { width: 0; }
+/* ACTIONS */
+.atd-row { display: flex; gap: 8px; padding: 8px 14px 4px; flex-shrink: 0; }
+.bact {
+  flex: 1; padding: 11px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text1); font-family: 'Nunito', sans-serif;
+  font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.2s; text-align: center;
+}
+.bact.take { border-color: rgba(160,32,240,0.4); background: rgba(160,32,240,0.12); color: #e040fb; }
+.bact.res { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.1); color: #86efac; }
+.bact:active { transform: scale(0.97); }
 
-  /* ===== MESSAGE BUBBLES ===== */
-  .msg-group { display: flex; flex-direction: column; gap: 2px; }
-  .msg-group.mine { align-items: flex-end; }
-  .msg-group.theirs { align-items: flex-start; }
+/* PHOTO BAR */
+.pbar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-top: 1px solid var(--border); background: rgba(14,6,24,0.9); flex-shrink: 0; }
+.pthumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; border: 1px solid var(--border-lit); }
+.pinfo { flex: 1; font-size: 12px; color: var(--text2); font-weight: 700; }
+.prm { width: 28px; height: 28px; border-radius: 50%; background: rgba(239,68,68,0.15); border: none; color: #fca5a5; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
 
-  .msg-sender {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-3);
-    margin-bottom: 3px;
-    padding: 0 4px;
-  }
-  .msg-group.mine .msg-sender { color: rgba(147,197,253,0.7); }
-  .msg-group.theirs .msg-sender { color: rgba(134,239,172,0.7); }
-
-  .bubble {
-    max-width: 78%;
-    padding: 9px 13px;
-    border-radius: 18px;
-    font-size: 14px;
-    line-height: 1.45;
-    position: relative;
-    word-break: break-word;
-    animation: bubble-in 0.2s var(--transition) both;
-  }
-  @keyframes bubble-in {
-    from { opacity: 0; transform: translateY(8px) scale(0.95); }
-    to { opacity: 1; transform: none; }
-  }
-  .msg-group.mine .bubble {
-    background: linear-gradient(135deg, #1d4ed8, var(--blue));
-    color: white;
-    border-bottom-right-radius: 5px;
-    box-shadow: 0 4px 16px rgba(59,130,246,0.3);
-  }
-  .msg-group.theirs .bubble {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: var(--text-1);
-    border-bottom-left-radius: 5px;
-  }
-  .bubble-time {
-    font-size: 10px;
-    opacity: 0.6;
-    margin-top: 3px;
-    text-align: right;
-  }
-  .msg-group.theirs .bubble-time { text-align: left; }
-
-  .bubble img {
-    max-width: 100%;
-    border-radius: 10px;
-    display: block;
-  }
-
-  /* ===== DATE SEPARATOR ===== */
-  .date-sep {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 8px 0;
-    font-size: 11px;
-    color: var(--text-3);
-  }
-  .date-sep::before, .date-sep::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  /* ===== TICKET INFO BAR ===== */
-  .ticket-info-card {
-    margin: 6px 14px 10px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px 12px;
-    font-size: 12px;
-    color: var(--text-2);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5px 12px;
-  }
-  .ticket-info-card .info-item { display: flex; align-items: center; gap: 5px; }
-  .ticket-info-card .info-item span { color: var(--text-1); font-weight: 500; }
-
-  /* ===== INPUT BAR ===== */
-  .input-bar {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    padding: 10px 12px;
-    padding-bottom: max(10px, env(safe-area-inset-bottom));
-    border-top: 1px solid var(--border);
-    background: rgba(8,13,26,0.9);
-    backdrop-filter: blur(20px);
-    flex-shrink: 0;
-  }
-  .input-wrap {
-    flex: 1;
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    border-radius: 22px;
-    padding: 9px 14px;
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    transition: border-color 0.2s;
-    min-height: 42px;
-  }
-  .input-wrap:focus-within { border-color: var(--border-glow); }
-  .input-field {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text-1);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    resize: none;
-    max-height: 100px;
-    overflow-y: auto;
-    line-height: 1.4;
-  }
-  .input-field::placeholder { color: var(--text-3); }
-  .input-field::-webkit-scrollbar { width: 0; }
-
-  .btn-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    background: transparent;
-    color: var(--text-2);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.15s, background 0.15s;
-    flex-shrink: 0;
-    font-size: 16px;
-  }
-  .btn-icon:active { background: var(--bg-input); color: var(--blue-light); }
-
-  .btn-send {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    border: none;
-    background: linear-gradient(135deg, #1d4ed8, var(--blue));
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
-    flex-shrink: 0;
-    box-shadow: 0 4px 14px rgba(59,130,246,0.4);
-    font-size: 17px;
-  }
-  .btn-send:active { transform: scale(0.9); }
-  .btn-send:disabled { opacity: 0.4; box-shadow: none; }
-
-  /* ===== ATTENDANT ACTIONS ===== */
-  .atd-actions {
-    display: flex;
-    gap: 8px;
-    padding: 8px 14px;
-    flex-shrink: 0;
-  }
-  .btn-action {
-    flex: 1;
-    padding: 10px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--bg-card);
-    color: var(--text-1);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-  }
-  .btn-action.take { border-color: var(--border-glow); background: var(--blue-dim); color: var(--blue-light); }
-  .btn-action.resolve { border-color: rgba(34,197,94,0.3); background: var(--green-dim); color: #86efac; }
-  .btn-action:active { transform: scale(0.97); }
-
-  /* ===== EMPTY STATE ===== */
-  .empty-state {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 32px;
-    text-align: center;
-  }
-  .empty-icon { font-size: 48px; opacity: 0.4; }
-  .empty-title { font-size: 17px; font-weight: 600; color: var(--text-2); }
-  .empty-sub { font-size: 13px; color: var(--text-3); }
-
-  /* ===== TOAST ===== */
-  .toast {
-    position: fixed;
-    top: 70px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-20px);
-    background: rgba(30,40,60,0.95);
-    border: 1px solid var(--border);
-    color: var(--text-1);
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 13px;
-    backdrop-filter: blur(20px);
-    z-index: 999;
-    opacity: 0;
-    transition: all 0.25s var(--transition);
-    pointer-events: none;
-    white-space: nowrap;
-  }
-  .toast.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-
-  /* ===== FILE INPUT ===== */
-  #file-input { display: none; }
-
-  /* ===== PHOTO PREVIEW ===== */
-  .photo-preview-bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 14px;
-    border-top: 1px solid var(--border);
-    background: rgba(8,13,26,0.9);
-    flex-shrink: 0;
-  }
-  .photo-preview-thumb {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    object-fit: cover;
-    border: 1px solid var(--border);
-  }
-  .photo-preview-info { flex: 1; font-size: 12px; color: var(--text-2); }
-  .photo-preview-remove {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    background: rgba(239,68,68,0.15);
-    border: none;
-    color: #fca5a5;
-    cursor: pointer;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+/* TOAST */
+.toast {
+  position: fixed; top: 66px; left: 50%;
+  transform: translateX(-50%) translateY(-16px);
+  background: rgba(22,13,36,0.97); border: 1px solid var(--border-lit);
+  color: var(--text1); padding: 8px 18px; border-radius: 24px;
+  font-size: 13px; font-weight: 800; backdrop-filter: blur(20px);
+  z-index: 999; opacity: 0; transition: all 0.25s ease;
+  pointer-events: none; white-space: nowrap;
+  box-shadow: 0 0 22px rgba(160,32,240,0.25);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#finput { display: none; }
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- VIEW: LOADING -->
+  <!-- LOADING -->
   <div id="view-loading" class="view active">
-    <div class="logo-icon">🎧</div>
-    <div class="logo-text">Suporte</div>
-    <div class="logo-sub">Achadinhos Digitais</div>
+    <div class="splash-logo">🎧</div>
+    <div class="splash-name">Suporte</div>
+    <div class="splash-sub">Achadinhos Digitais</div>
     <div class="spinner"></div>
   </div>
 
-  <!-- VIEW: TICKET LIST -->
+  <!-- LIST -->
   <div id="view-list" class="view">
-    <div class="header">
-      <div class="list-header-logo">
-        <div class="logo-sm">🎧</div>
-      </div>
-      <div class="header-info">
-        <div class="header-title" id="list-title">Meus Tickets</div>
-        <div class="header-sub" id="list-sub">Suporte Achadinhos Digitais</div>
-      </div>
+    <div class="list-top">
+      <div class="brand-sm">🎧</div>
+      <div class="brand-label" id="list-label">Meus Tickets</div>
     </div>
-
     <div class="tabs">
-      <button class="tab active" data-status="open" onclick="changeTab(this)">🔴 Abertos</button>
-      <button class="tab" data-status="in_progress" onclick="changeTab(this)">🟡 Em atendimento</button>
-      <button class="tab" data-status="resolved" onclick="changeTab(this)">🟢 Resolvidos</button>
+      <button class="tab active" data-s="open" onclick="changeTab(this)">🔴 Abertos</button>
+      <button class="tab" data-s="in_progress" onclick="changeTab(this)">🟡 Atendendo</button>
+      <button class="tab" data-s="resolved" onclick="changeTab(this)">🟢 Resolvidos</button>
     </div>
-
-    <div class="scroll-area" id="ticket-list-area">
-      <div class="empty-state">
-        <div class="spinner"></div>
-      </div>
+    <div class="scroll-area" id="list-area">
+      <div class="empty"><div class="spinner"></div></div>
     </div>
-
-    <button class="fab" id="fab-new" onclick="showView('new')" title="Novo ticket">＋</button>
+    <button class="fab" id="fab" onclick="goNew()">＋</button>
   </div>
 
-  <!-- VIEW: NEW TICKET -->
+  <!-- NEW TICKET -->
   <div id="view-new" class="view">
     <div class="header">
-      <button class="header-back" onclick="showView('list')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <path d="M19 12H5M12 5l-7 7 7 7"/>
-        </svg>
+      <button class="btn-back" onclick="goList()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
       </button>
-      <div class="header-info">
-        <div class="header-title">Novo Chamado</div>
-        <div class="header-sub">Descreva seu problema</div>
+      <div class="h-info">
+        <div class="h-title">Novo Chamado</div>
+        <div class="h-sub">Achadinhos Digitais</div>
       </div>
     </div>
-
-    <div class="scroll-area">
-      <div class="form-section">
-        <div class="form-label">Categoria do problema</div>
-        <div class="cat-grid">
-          <button class="cat-btn" data-cat="produto" onclick="selectCat(this)">
-            <span class="cat-emoji">📦</span>Produto
-          </button>
-          <button class="cat-btn" data-cat="pagamento" onclick="selectCat(this)">
-            <span class="cat-emoji">💳</span>Pagamento
-          </button>
-          <button class="cat-btn" data-cat="tecnico" onclick="selectCat(this)">
-            <span class="cat-emoji">⚙️</span>Técnico
-          </button>
-          <button class="cat-btn" data-cat="outro" onclick="selectCat(this)">
-            <span class="cat-emoji">❓</span>Outro
-          </button>
-        </div>
-
-        <div class="form-label">Descreva o problema</div>
-        <div class="textarea-wrap">
-          <textarea id="new-desc" placeholder="Explique o que aconteceu com o máximo de detalhes..." rows="4"></textarea>
-        </div>
-
-        <button class="btn-primary" id="btn-create" onclick="createTicket()" disabled>
-          Abrir Chamado
-        </button>
+    <div class="form-scroll">
+      <div class="flabel">Categoria do problema</div>
+      <div class="cat-grid">
+        <button class="cat-btn" data-c="produto" onclick="selCat(this)"><span class="cem">📦</span>Produto</button>
+        <button class="cat-btn" data-c="pagamento" onclick="selCat(this)"><span class="cem">💳</span>Pagamento</button>
+        <button class="cat-btn" data-c="tecnico" onclick="selCat(this)"><span class="cem">⚙️</span>Técnico</button>
+        <button class="cat-btn" data-c="outro" onclick="selCat(this)"><span class="cem">❓</span>Outro</button>
       </div>
+      <div class="flabel">Descreva o problema</div>
+      <div class="ibox">
+        <textarea id="new-desc" placeholder="Explique com detalhes o que aconteceu..." rows="4"></textarea>
+      </div>
+      <button class="btn-pri" id="btn-create" onclick="createTicket()" disabled>✨ Abrir Chamado</button>
     </div>
   </div>
 
-  <!-- VIEW: CHAT -->
+  <!-- CHAT -->
   <div id="view-chat" class="view">
     <div class="header">
-      <button class="header-back" onclick="leaveChat()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <path d="M19 12H5M12 5l-7 7 7 7"/>
-        </svg>
+      <button class="btn-back" onclick="leaveChat()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
       </button>
-      <div class="header-avatar" id="chat-avatar">🎧</div>
-      <div class="header-info">
-        <div class="header-title" id="chat-title">Suporte</div>
-        <div class="header-sub" id="chat-sub">
-          <span class="online-dot"></span>
-          <span>Online agora</span>
-        </div>
+      <div class="h-avatar" id="catav">🎧</div>
+      <div class="h-info">
+        <div class="h-title" id="chat-title">Suporte</div>
+        <div class="h-sub" id="chat-sub"><span class="dot-online"></span><span>Online agora</span></div>
       </div>
     </div>
-
-    <!-- Info do ticket -->
-    <div class="ticket-info-card" id="ticket-info-card"></div>
-
-    <!-- Área de mensagens -->
-    <div class="messages-area" id="messages-area"></div>
-
-    <!-- Ações do atendente -->
-    <div class="atd-actions" id="atd-actions" style="display:none"></div>
-
-    <!-- Preview de foto -->
-    <div class="photo-preview-bar" id="photo-preview-bar" style="display:none">
-      <img id="photo-preview-thumb" class="photo-preview-thumb" src="" alt="">
-      <div class="photo-preview-info">Foto selecionada</div>
-      <button class="photo-preview-remove" onclick="removePhoto()">✕</button>
+    <div class="tinfo-bar" id="tinfo"></div>
+    <div class="msgs" id="msgs"></div>
+    <div class="atd-row" id="atd-row" style="display:none"></div>
+    <div class="pbar" id="pbar" style="display:none">
+      <img id="pthumb" class="pthumb" src="" alt="">
+      <div class="pinfo">Foto selecionada</div>
+      <button class="prm" onclick="rmPhoto()">✕</button>
     </div>
-
-    <!-- Barra de input -->
-    <div class="input-bar" id="input-bar">
-      <div class="input-wrap">
-        <textarea
-          class="input-field"
-          id="msg-input"
-          placeholder="Digite sua mensagem..."
-          rows="1"
-          oninput="autoResize(this); updateSendBtn()"
-          onkeydown="handleEnter(event)"
-        ></textarea>
-        <button class="btn-icon" onclick="triggerPhoto()" title="Foto">
-          📷
-        </button>
+    <div class="ibar" id="ibar">
+      <div class="iwrap">
+        <textarea class="ifield" id="msginput" placeholder="Digite sua mensagem..." rows="1"
+          oninput="autoR(this);updSend()" onkeydown="onKey(event)"></textarea>
+        <button class="bico" onclick="pickPhoto()">📷</button>
       </div>
-      <button class="btn-send" id="btn-send" onclick="sendMessage()" disabled>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <button class="bsend" id="bsend" onclick="sendMsg()" disabled>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
         </svg>
       </button>
     </div>
-
-    <input type="file" id="file-input" accept="image/*" onchange="onPhotoSelected(event)">
+    <input type="file" id="finput" accept="image/*" onchange="onPhoto(event)">
   </div>
-
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== CONFIG =====
-const API_BASE = 'https://SEU_BOT_URL.squarecloud.app/api'; // ← SUBSTITUA PELA SUA URL
+// === CONFIG ===
+const API = 'https://SEU_BOT.squarecloud.app/api'; // ← TROQUE PELA SUA URL
 
-// ===== STATE =====
-let tg = window.Telegram.WebApp;
-let tgUser = null;
-let userRole = 'client'; // 'client' | 'attendant'
-let currentTicketId = null;
-let currentTicket = null;
-let pollInterval = null;
-let selectedCat = null;
-let selectedPhoto = null; // { file, dataUrl, base64 }
-let activeTab = 'open';
-let lastMsgCount = 0;
-let isAtBottom = true;
+// === TELEGRAM SAFE INIT ===
+let tg = null;
+let TGU = null;
 
-// ===== INIT =====
-tg.ready();
-tg.expand();
+(function() {
+  try {
+    if (window.Telegram && window.Telegram.WebApp) {
+      tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+      TGU = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
+    }
+  } catch(e) { console.warn('TG WebApp init error:', e); }
+  // Fallback DEV
+  if (!TGU) TGU = { id: 99999999, first_name: 'Usuário', last_name: '' };
+})();
 
-// Apply Telegram theme colors
-document.documentElement.style.setProperty('--tg-theme-bg', tg.colorScheme === 'dark' ? '#080d1a' : '#080d1a');
+// === STATE ===
+let role = 'client';
+let ticketId = null;
+let ticket = null;
+let poll = null;
+let cat = null;
+let photo = null;
+let tab = 'open';
+let lastN = 0;
 
+// === INIT ===
 async function init() {
   try {
-    tgUser = tg.initDataUnsafe?.user;
-    if (!tgUser?.id) {
-      // Dev fallback
-      tgUser = { id: 12345, first_name: 'Teste', last_name: '' };
+    const r = await GET(`/init?userId=${TGU.id}&initData=${encodeURIComponent(tg?.initData||'')}`);
+    role = r.role || 'client';
+    if (role === 'attendant') {
+      document.getElementById('list-label').textContent = 'Painel';
+      document.getElementById('fab').style.display = 'none';
     }
-
-    const res = await apiGet(`/init?userId=${tgUser.id}&initData=${encodeURIComponent(tg.initData || '')}`);
-    userRole = res.role || 'client';
-
-    if (userRole === 'attendant') {
-      document.getElementById('list-title').textContent = 'Painel de Atendimento';
-      document.getElementById('list-sub').textContent = 'Todos os tickets';
-      document.getElementById('fab-new').style.display = 'none';
-    }
-
-    showView('list');
-    loadTickets();
-  } catch (e) {
-    showToast('❌ Erro ao conectar. Tente novamente.');
-    console.error(e);
+    showV('list');
+    loadList();
+  } catch(e) {
+    showV('list');
+    document.getElementById('list-area').innerHTML = `<div class="empty"><div class="empty-ico">🔧</div><div class="empty-t">Configure a API</div><div class="empty-s">Defina API_BASE com a URL do seu bot</div></div>`;
   }
 }
 
-// ===== API =====
-async function apiGet(path) {
-  const r = await fetch(API_BASE + path);
-  if (!r.ok) throw new Error('HTTP ' + r.status);
-  return r.json();
-}
+// === API ===
+async function GET(path) { const r=await fetch(API+path); if(!r.ok)throw new Error('HTTP '+r.status); return r.json(); }
+async function POST(path,body) { const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); if(!r.ok)throw new Error('HTTP '+r.status); return r.json(); }
 
-async function apiPost(path, body) {
-  const r = await fetch(API_BASE + path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (!r.ok) throw new Error('HTTP ' + r.status);
-  return r.json();
+// === NAV ===
+function showV(name) {
+  document.querySelectorAll('.view').forEach(v => { v.classList.remove('active'); v.classList.add('out'); setTimeout(()=>v.classList.remove('out'),320); });
+  const el = document.getElementById('view-'+name);
+  el.classList.remove('out');
+  setTimeout(()=>el.classList.add('active'),10);
 }
+function goList() { showV('list'); loadList(); }
+function goNew() { showV('new'); }
 
-// ===== NAVIGATION =====
-function showView(name) {
-  document.querySelectorAll('.view').forEach(v => {
-    v.classList.remove('active', 'slide-out');
-    v.classList.add('slide-out');
-    setTimeout(() => v.classList.remove('slide-out'), 300);
-  });
-  const el = document.getElementById('view-' + name);
-  el.classList.remove('slide-out');
-  el.classList.add('active');
-}
-
-// ===== TABS =====
+// === TABS ===
 function changeTab(btn) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  activeTab = btn.dataset.status;
-  loadTickets();
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active'); tab=btn.dataset.s; loadList();
 }
 
-// ===== TICKET LIST =====
-async function loadTickets() {
-  const area = document.getElementById('ticket-list-area');
-  area.innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
-
+// === LIST ===
+async function loadList() {
+  const a=document.getElementById('list-area');
+  a.innerHTML='<div class="empty"><div class="spinner"></div></div>';
   try {
-    const data = await apiGet(`/tickets?userId=${tgUser.id}&role=${userRole}&status=${activeTab}`);
-    const tickets = data.tickets || [];
-
-    if (tickets.length === 0) {
-      area.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">📭</div>
-          <div class="empty-title">Nenhum ticket aqui</div>
-          <div class="empty-sub">${userRole === 'client' ? 'Toque em + para abrir um chamado' : 'Tudo tranquilo por aqui'}</div>
-        </div>`;
+    const d=await GET(`/tickets?userId=${TGU.id}&role=${role}&status=${tab}`);
+    const ts=d.tickets||[];
+    if(!ts.length){
+      a.innerHTML=`<div class="empty"><div class="empty-ico">📭</div><div class="empty-t">Nenhum ticket aqui</div><div class="empty-s">${role==='client'?'Toque em + para abrir um chamado':'Tudo ok por aqui!'}</div></div>`;
       return;
     }
-
-    area.innerHTML = tickets.map(t => renderCard(t)).join('');
-  } catch (e) {
-    area.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Erro ao carregar</div><div class="empty-sub">Verifique sua conexão</div></div>`;
+    a.innerHTML=ts.map(renderCard).join('');
+  } catch(e) {
+    a.innerHTML=`<div class="empty"><div class="empty-ico">⚠️</div><div class="empty-t">Erro</div><div class="empty-s">${e.message}</div></div>`;
   }
 }
 
 function renderCard(t) {
-  const cats = { produto:'📦 Produto', pagamento:'💳 Pagamento', tecnico:'⚙️ Técnico', outro:'❓ Outro' };
-  const statusLabel = { open:'Aguardando', in_progress:'Em atendimento', resolved:'Resolvido', closed:'Fechado' };
-  const badgeClass = { open:'badge-open', in_progress:'badge-in_progress', resolved:'badge-resolved', closed:'badge-closed' };
-  const date = new Date(t.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
-  const preview = t.last_message ? (t.last_message.length > 48 ? t.last_message.slice(0,48)+'…' : t.last_message) : '';
-
-  return `
-  <div class="ticket-card status-${t.status}" onclick="openTicket('${t.id}')">
-    <div class="ticket-card-header">
-      <div class="ticket-cat">${cats[t.category] || '❓ Outro'}</div>
-      <div class="ticket-status-badge ${badgeClass[t.status] || 'badge-open'}">${statusLabel[t.status] || t.status}</div>
-    </div>
-    <div class="ticket-meta">
-      <span>🕐 ${date}</span>
-      <span>💬 ${t.messages_count || 0} msgs</span>
-      ${userRole === 'attendant' ? `<span>🆔 ${t.user_id}</span>` : ''}
-    </div>
-    ${preview ? `<div class="ticket-preview">"${preview}"</div>` : ''}
+  const cats={produto:'📦 Produto',pagamento:'💳 Pagamento',tecnico:'⚙️ Técnico',outro:'❓ Outro'};
+  const sl={open:'Aguardando',in_progress:'Em atendimento',resolved:'Resolvido',closed:'Fechado'};
+  const bc={open:'b-open',in_progress:'b-in_progress',resolved:'b-resolved',closed:'b-closed'};
+  const dt=new Date(t.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const prev=t.last_message?(t.last_message.length>45?t.last_message.slice(0,45)+'…':t.last_message):'';
+  return `<div class="tcard s-${t.status}" onclick="openTicket('${t.id}')">
+    <div class="tc-row1"><div class="tc-cat">${cats[t.category]||'❓ Outro'}</div><div class="badge ${bc[t.status]||'b-open'}">${sl[t.status]||t.status}</div></div>
+    <div class="tc-meta"><span>🕐 ${dt}</span><span>💬 ${t.messages_count||0}</span>${role==='attendant'?`<span>🆔 ${t.user_id}</span>`:''}</div>
+    ${prev?`<div class="tc-prev">"${esc(prev)}"</div>`:''}
   </div>`;
 }
 
-// ===== OPEN TICKET =====
-async function openTicket(ticketId) {
-  currentTicketId = ticketId;
-  lastMsgCount = 0;
-
-  showView('chat');
-  document.getElementById('messages-area').innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
-  document.getElementById('ticket-info-card').innerHTML = '';
-  document.getElementById('atd-actions').style.display = 'none';
-
-  await loadTicketChat();
-  startPolling();
+// === CHAT ===
+async function openTicket(id) {
+  ticketId=id; lastN=0;
+  showV('chat');
+  document.getElementById('msgs').innerHTML='<div class="empty"><div class="spinner"></div></div>';
+  document.getElementById('tinfo').innerHTML='';
+  document.getElementById('atd-row').style.display='none';
+  await loadChat();
+  startPoll();
 }
 
-async function loadTicketChat() {
+async function loadChat() {
   try {
-    const data = await apiGet(`/ticket/${currentTicketId}?userId=${tgUser.id}&role=${userRole}`);
-    currentTicket = data.ticket;
-    renderChat(currentTicket);
-  } catch (e) {
-    showToast('❌ Erro ao carregar ticket');
-  }
+    const d=await GET(`/ticket/${ticketId}?userId=${TGU.id}&role=${role}`);
+    ticket=d.ticket; renderChat(ticket);
+  } catch(e){ toast('❌ Erro ao carregar'); }
 }
 
-function renderChat(ticket) {
-  const cats = { produto:'📦 Produto', pagamento:'💳 Pagamento', tecnico:'⚙️ Técnico', outro:'❓ Outro' };
-  const statusLabel = { open:'Aguardando atendente', in_progress:'Em atendimento 🟡', resolved:'✅ Resolvido', closed:'⚫ Fechado' };
+function renderChat(t) {
+  const cem={produto:'📦',pagamento:'💳',tecnico:'⚙️',outro:'❓'};
+  const cfull={produto:'📦 Produto',pagamento:'💳 Pagamento',tecnico:'⚙️ Técnico',outro:'❓ Outro'};
+  const stxt={open:'🔴 Aguardando',in_progress:'🟡 Em atendimento',resolved:'🟢 Resolvido',closed:'⚫ Fechado'};
 
-  // Header
-  const catIcon = { produto:'📦', pagamento:'💳', tecnico:'⚙️', outro:'❓' };
-  document.getElementById('chat-avatar').textContent = catIcon[ticket.category] || '🎧';
-  document.getElementById('chat-title').textContent = cats[ticket.category] || 'Suporte';
+  document.getElementById('catav').textContent=cem[t.category]||'🎧';
+  document.getElementById('chat-title').textContent=cfull[t.category]||'Suporte';
 
-  // Info card
-  const openedAt = new Date(ticket.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-  document.getElementById('ticket-info-card').innerHTML = `
-    <div class="info-item">🎫 <span>${ticket.id.replace('TICKET_','').replace('_',' ')}</span></div>
-    <div class="info-item">📋 <span>${statusLabel[ticket.status] || ticket.status}</span></div>
-    <div class="info-item">📅 <span>${openedAt}</span></div>
-    ${userRole === 'attendant' ? `<div class="info-item">🆔 <span>${ticket.user_id}</span></div>` : ''}
-    ${ticket.description ? `<div class="info-item" style="grid-column:1/-1">💬 <span style="font-style:italic">${ticket.description.slice(0,60)}${ticket.description.length>60?'…':''}</span></div>` : ''}
+  const op=new Date(t.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('tinfo').innerHTML=`
+    <div class="ir">🎫 <span>${t.id.replace('TICKET_','').replace(/_/g,' ')}</span></div>
+    <div class="ir">📋 <span>${stxt[t.status]||t.status}</span></div>
+    <div class="ir">📅 <span>${op}</span></div>
+    ${role==='attendant'?`<div class="ir">🆔 <span>${t.user_id}</span></div>`:''}
+    ${t.description?`<div class="ir full">💬 <span style="font-style:italic">"${esc(t.description.slice(0,60))}${t.description.length>60?'…':''}"</span></div>`:''}
   `;
 
-  // Render messages
-  const area = document.getElementById('messages-area');
-  const msgs = ticket.messages || [];
-  const shouldScroll = msgs.length !== lastMsgCount;
-  lastMsgCount = msgs.length;
+  const area=document.getElementById('msgs');
+  const ms=t.messages||[];
+  const changed=ms.length!==lastN; lastN=ms.length;
 
-  if (msgs.length === 0) {
-    area.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div><div class="empty-title">Sem mensagens</div><div class="empty-sub">Comece a conversa abaixo</div></div>`;
+  if(!ms.length){
+    area.innerHTML=`<div class="empty"><div class="empty-ico">💬</div><div class="empty-t">Inicie a conversa</div><div class="empty-s">Digite abaixo</div></div>`;
   } else {
-    let html = '';
-    let prevFrom = null;
-    let prevDate = null;
-
-    msgs.forEach((m, i) => {
-      const isMe = String(m.from) === String(tgUser.id);
-      const fromChanged = m.from !== prevFrom;
-      const msgDate = new Date(m.timestamp).toLocaleDateString('pt-BR');
-      const msgTime = new Date(m.timestamp).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-
-      if (msgDate !== prevDate) {
-        if (i > 0) html += '</div>';
-        html += `<div class="date-sep">${msgDate === new Date().toLocaleDateString('pt-BR') ? 'Hoje' : msgDate}</div>`;
-        prevFrom = null;
+    let html='',pFrom=null,pDate=null,open=false;
+    ms.forEach((m,i)=>{
+      const isMe=String(m.from)===String(TGU.id);
+      const md=new Date(m.timestamp).toLocaleDateString('pt-BR');
+      const mt=new Date(m.timestamp).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      if(md!==pDate){
+        if(open){html+='</div>';open=false;}
+        html+=`<div class="datesep">${md===new Date().toLocaleDateString('pt-BR')?'Hoje':md}</div>`;
+        pFrom=null; pDate=md;
       }
-
-      if (fromChanged || i === 0 || msgDate !== prevDate) {
-        if (i > 0 && prevFrom !== null && msgDate === new Date(msgs[i-1]?.timestamp).toLocaleDateString('pt-BR')) html += '</div>';
-        const senderLabel = isMe
-          ? (userRole === 'attendant' ? '🧑‍💼 Você' : '🧑 Você')
-          : (userRole === 'client' ? '🧑‍💼 Atendente' : `🧑 ${ticket.user_id}`);
-        html += `<div class="msg-group ${isMe ? 'mine' : 'theirs'}"><div class="msg-sender">${senderLabel}</div>`;
+      if(m.from!==pFrom){
+        if(open) html+='</div>';
+        const side=isMe?'mine':'theirs';
+        const who=isMe
+          ?(role==='attendant'?'🧑‍💼 Você':'🧑 Você')
+          :(role==='client'?'🧑‍💼 Atendente':`🧑 ID:${t.user_id}`);
+        html+=`<div class="mgroup ${side}"><div class="mwho">${who}</div>`;
+        open=true; pFrom=m.from;
       }
-
-      if (m.photo_id) {
-        html += `<div class="bubble">📷 <em>Imagem enviada</em><div class="bubble-time">${msgTime}</div></div>`;
-      } else {
-        html += `<div class="bubble">${escapeHtml(m.text)}<div class="bubble-time">${msgTime}</div></div>`;
-      }
-
-      prevFrom = m.from;
-      prevDate = msgDate;
+      const cnt=m.photo_id?'📷 <em>Imagem</em>':esc(m.text);
+      html+=`<div class="bbl">${cnt}<div class="btime">${mt}</div></div>`;
     });
-    html += '</div>';
-    area.innerHTML = html;
+    if(open) html+='</div>';
+    area.innerHTML=html;
   }
 
-  // Attendant actions
-  const atdDiv = document.getElementById('atd-actions');
-  if (userRole === 'attendant') {
-    atdDiv.style.display = 'flex';
-    if (ticket.status === 'open') {
-      atdDiv.innerHTML = `<button class="btn-action take" onclick="takeTicket()">🎯 Pegar este Ticket</button>`;
-      document.getElementById('input-bar').style.display = 'none';
-    } else if (ticket.status === 'in_progress' && String(ticket.assigned_to) === String(tgUser.id)) {
-      atdDiv.innerHTML = `<button class="btn-action resolve" onclick="resolveTicket()">✅ Marcar Resolvido</button>`;
-      document.getElementById('input-bar').style.display = 'flex';
-    } else {
-      atdDiv.style.display = 'none';
-      document.getElementById('input-bar').style.display = String(ticket.assigned_to) === String(tgUser.id) ? 'flex' : 'none';
-    }
+  const atd=document.getElementById('atd-row');
+  const ib=document.getElementById('ibar');
+  if(role==='attendant'){
+    if(t.status==='open'){
+      atd.style.display='flex';
+      atd.innerHTML=`<button class="bact take" onclick="takeTicket()">🎯 Pegar este Ticket</button>`;
+      ib.style.display='none';
+    } else if(t.status==='in_progress'&&String(t.assigned_to)===String(TGU.id)){
+      atd.style.display='flex';
+      atd.innerHTML=`<button class="bact res" onclick="resolveTicket()">✅ Marcar Resolvido</button>`;
+      ib.style.display='flex';
+    } else { atd.style.display='none'; ib.style.display='none'; }
   } else {
-    // Client
-    const canChat = ticket.status === 'open' || ticket.status === 'in_progress';
-    document.getElementById('input-bar').style.display = canChat ? 'flex' : 'none';
-    if (!canChat) {
-      atdDiv.style.display = 'flex';
-      atdDiv.innerHTML = ticket.status === 'resolved'
-        ? `<button class="btn-action" onclick="rateTicket()">⭐ Avaliar Atendimento</button>`
-        : '';
-    }
+    const ok=t.status==='open'||t.status==='in_progress';
+    ib.style.display=ok?'flex':'none';
+    if(!ok&&t.status==='resolved'&&!t.rating){
+      atd.style.display='flex';
+      atd.innerHTML=`<button class="bact" onclick="toast('⭐ Avalie pelo bot!')">⭐ Avaliar Atendimento</button>`;
+    } else { atd.style.display='none'; }
   }
 
-  if (shouldScroll) scrollToBottom();
+  if(changed) setTimeout(()=>area.scrollTo({top:area.scrollHeight,behavior:'smooth'}),60);
 }
 
-function scrollToBottom() {
-  const area = document.getElementById('messages-area');
-  setTimeout(() => area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' }), 50);
+function startPoll(){
+  stopPoll();
+  poll=setInterval(async()=>{
+    if(!ticketId) return;
+    try{ const d=await GET(`/ticket/${ticketId}?userId=${TGU.id}&role=${role}`); if((d.ticket.messages?.length||0)!==lastN){ticket=d.ticket;renderChat(ticket);} }catch(e){}
+  },2500);
+}
+function stopPoll(){ if(poll){clearInterval(poll);poll=null;} }
+function leaveChat(){ stopPoll(); ticketId=null; showV('list'); loadList(); }
+
+// === SEND ===
+async function sendMsg(){
+  const inp=document.getElementById('msginput');
+  const txt=inp.value.trim();
+  if(!txt&&!photo) return;
+  document.getElementById('bsend').disabled=true;
+  try{
+    await POST(`/ticket/${ticketId}/message`,{userId:TGU.id,userName:TGU.first_name||'Usuário',text:txt||null,photo:photo?photo.b64:null,role,initData:tg?.initData||''});
+    inp.value=''; inp.style.height='auto';
+    rmPhoto(); updSend();
+    toast('✅ Enviado!',1400);
+    await loadChat();
+  }catch(e){ toast('❌ Erro ao enviar'); }
+  document.getElementById('bsend').disabled=false;
+}
+function onKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();} }
+function updSend(){ document.getElementById('bsend').disabled=!document.getElementById('msginput').value.trim()&&!photo; }
+function autoR(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
+
+// === PHOTO ===
+function pickPhoto(){ document.getElementById('finput').click(); }
+function onPhoto(e){
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=ev=>{ const d=ev.target.result; photo={b64:d.split(',')[1]}; document.getElementById('pthumb').src=d; document.getElementById('pbar').style.display='flex'; document.getElementById('bsend').disabled=false; };
+  rd.readAsDataURL(f); e.target.value='';
+}
+function rmPhoto(){ photo=null; document.getElementById('pbar').style.display='none'; updSend(); }
+
+// === ATTENDANT ===
+async function takeTicket(){
+  try{ await POST(`/ticket/${ticketId}/take`,{userId:TGU.id,userName:TGU.first_name||'Atendente',initData:tg?.initData||''}); toast('✅ Ticket pegado!'); await loadChat(); }catch(e){ toast('❌ '+e.message); }
+}
+async function resolveTicket(){
+  if(!confirm('Marcar como resolvido?')) return;
+  try{ await POST(`/ticket/${ticketId}/resolve`,{userId:TGU.id,initData:tg?.initData||''}); toast('✅ Resolvido!'); await loadChat(); }catch(e){ toast('❌ '+e.message); }
 }
 
-// ===== POLLING =====
-function startPolling() {
-  stopPolling();
-  pollInterval = setInterval(async () => {
-    if (currentTicketId) {
-      try {
-        const data = await apiGet(`/ticket/${currentTicketId}?userId=${tgUser.id}&role=${userRole}`);
-        if (data.ticket.messages.length !== lastMsgCount) {
-          currentTicket = data.ticket;
-          renderChat(currentTicket);
-        }
-      } catch(e) {}
-    }
-  }, 2500);
+// === NEW TICKET ===
+function selCat(btn){ document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); cat=btn.dataset.c; chkCreate(); }
+function chkCreate(){ document.getElementById('btn-create').disabled=!cat||!document.getElementById('new-desc').value.trim(); }
+document.getElementById('new-desc').addEventListener('input',chkCreate);
+async function createTicket(){
+  const desc=document.getElementById('new-desc').value.trim();
+  if(!cat||!desc) return;
+  const btn=document.getElementById('btn-create');
+  btn.disabled=true; btn.textContent='Criando…';
+  try{
+    const d=await POST('/ticket',{userId:TGU.id,userName:TGU.first_name||'Usuário',category:cat,description:desc,initData:tg?.initData||''});
+    toast('✅ Chamado aberto!');
+    document.getElementById('new-desc').value='';
+    document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('sel'));
+    cat=null; chkCreate();
+    setTimeout(()=>openTicket(d.ticketId),800);
+  }catch(e){ toast('❌ Erro ao criar'); btn.disabled=false; btn.textContent='✨ Abrir Chamado'; }
 }
 
-function stopPolling() {
-  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+// === UTILS ===
+let toastTimer=null;
+function toast(msg,dur=2500){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),dur);
 }
+function esc(s){ if(!s)return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
 
-function leaveChat() {
-  stopPolling();
-  currentTicketId = null;
-  currentTicket = null;
-  showView('list');
-  loadTickets();
-}
-
-// ===== SEND MESSAGE =====
-async function sendMessage() {
-  const input = document.getElementById('msg-input');
-  const text = input.value.trim();
-  if (!text && !selectedPhoto) return;
-
-  const btn = document.getElementById('btn-send');
-  btn.disabled = true;
-
-  try {
-    await apiPost(`/ticket/${currentTicketId}/message`, {
-      userId: tgUser.id,
-      userName: tgUser.first_name || 'Usuário',
-      text: text || null,
-      photo: selectedPhoto ? selectedPhoto.base64 : null,
-      role: userRole,
-      initData: tg.initData || ''
-    });
-
-    input.value = '';
-    input.style.height = 'auto';
-    removePhoto();
-    updateSendBtn();
-
-    // Show sent toast
-    showToast('✅ Enviado!', 1500);
-
-    // Reload
-    await loadTicketChat();
-  } catch (e) {
-    showToast('❌ Erro ao enviar');
-  }
-
-  btn.disabled = false;
-}
-
-function handleEnter(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-}
-
-function updateSendBtn() {
-  const input = document.getElementById('msg-input');
-  document.getElementById('btn-send').disabled = !input.value.trim() && !selectedPhoto;
-}
-
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
-}
-
-// ===== PHOTO =====
-function triggerPhoto() {
-  document.getElementById('file-input').click();
-}
-
-function onPhotoSelected(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const dataUrl = ev.target.result;
-    const base64 = dataUrl.split(',')[1];
-    selectedPhoto = { file, dataUrl, base64 };
-
-    document.getElementById('photo-preview-thumb').src = dataUrl;
-    document.getElementById('photo-preview-bar').style.display = 'flex';
-    document.getElementById('btn-send').disabled = false;
-  };
-  reader.readAsDataURL(file);
-  e.target.value = '';
-}
-
-function removePhoto() {
-  selectedPhoto = null;
-  document.getElementById('photo-preview-bar').style.display = 'none';
-  updateSendBtn();
-}
-
-// ===== ATTENDANT ACTIONS =====
-async function takeTicket() {
-  try {
-    await apiPost(`/ticket/${currentTicketId}/take`, {
-      userId: tgUser.id,
-      userName: tgUser.first_name || 'Atendente',
-      initData: tg.initData || ''
-    });
-    showToast('✅ Ticket pegado!');
-    await loadTicketChat();
-  } catch (e) { showToast('❌ Erro ao pegar ticket'); }
-}
-
-async function resolveTicket() {
-  if (!confirm('Marcar este ticket como resolvido?')) return;
-  try {
-    await apiPost(`/ticket/${currentTicketId}/resolve`, {
-      userId: tgUser.id,
-      initData: tg.initData || ''
-    });
-    showToast('✅ Ticket resolvido!');
-    await loadTicketChat();
-  } catch (e) { showToast('❌ Erro ao resolver'); }
-}
-
-function rateTicket() {
-  showToast('⭐ Função disponível no bot');
-}
-
-// ===== NEW TICKET =====
-function selectCat(btn) {
-  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  selectedCat = btn.dataset.cat;
-  checkCreateBtn();
-}
-
-function checkCreateBtn() {
-  const desc = document.getElementById('new-desc').value.trim();
-  document.getElementById('btn-create').disabled = !selectedCat || !desc;
-}
-
-document.getElementById('new-desc').addEventListener('input', checkCreateBtn);
-
-async function createTicket() {
-  const desc = document.getElementById('new-desc').value.trim();
-  if (!selectedCat || !desc) return;
-
-  const btn = document.getElementById('btn-create');
-  btn.disabled = true;
-  btn.textContent = 'Criando…';
-
-  try {
-    const data = await apiPost('/ticket', {
-      userId: tgUser.id,
-      userName: tgUser.first_name || 'Usuário',
-      category: selectedCat,
-      description: desc,
-      initData: tg.initData || ''
-    });
-
-    showToast('✅ Chamado aberto!');
-    document.getElementById('new-desc').value = '';
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
-    selectedCat = null;
-    checkCreateBtn();
-
-    // Open the new ticket
-    setTimeout(() => openTicket(data.ticketId), 800);
-  } catch (e) {
-    showToast('❌ Erro ao criar chamado');
-    btn.disabled = false;
-    btn.textContent = 'Abrir Chamado';
-  }
-}
-
-// ===== UTILS =====
-function showToast(msg, duration = 2500) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), duration);
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-}
-
-// ===== START =====
-window.addEventListener('load', init);
+window.addEventListener('load',init);
 </script>
 </body>
 </html>
