@@ -441,6 +441,7 @@ html,body{height:100%;font-family:Nunito,sans-serif;font-size:15px;overflow:hidd
           <div class="profile-photo-overlay">📷</div>
         </div>
         <div class="profile-name-label" id="profile-display-name">Seu nome</div>
+        <button id="remove-photo-btn" onclick="removeProfilePhoto()" style="display:none;background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.3);color:#dc2626;border-radius:20px;padding:5px 14px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;margin-top:-4px">🗑️ Remover foto</button>
       </div>
       <div class="profile-card">
         <div class="profile-card-title">Informações</div>
@@ -627,7 +628,7 @@ async function init() {
       if (r.whatsapp) document.getElementById('profile-wa-input').value = r.whatsapp;
       if (r.photo) {
         document.getElementById('profile-photo-inner').innerHTML = `<img src="${r.photo}" alt="">`;
-        document.getElementById('cl-list-avatar').innerHTML = `<img src="${r.photo}" alt="">`;
+        document.getElementById('remove-photo-btn').style.display = 'block';
       }
       loadClList();
     }
@@ -844,6 +845,18 @@ async function saveProfile(){
     profilePhotoB64=null;
     toast('✅ Perfil salvo!');
     showV('vcl-list');loadClList();
+  }catch(e){toast('❌ '+e.message);}
+}
+
+async function removeProfilePhoto(){
+  if(!confirm('Remover sua foto de perfil?')) return;
+  try{
+    await PUT('/profile',{userId:TGU.id,photo:null,initData:tg?.initData||''});
+    userData.photo=null;
+    profilePhotoB64=null;
+    document.getElementById('profile-photo-inner').innerHTML='👤';
+    document.getElementById('remove-photo-btn').style.display='none';
+    toast('✅ Foto removida!');
   }catch(e){toast('❌ '+e.message);}
 }
 
@@ -1274,6 +1287,7 @@ function onPhoto(e,side){
     if(side==='profile'){
       profilePhotoB64=d; // store full data URL including mime prefix
       document.getElementById('profile-photo-inner').innerHTML=`<img src="${d}" alt="">`;
+      document.getElementById('remove-photo-btn').style.display='block';
       toast('📷 Foto selecionada — toque em Salvar!');
     }else{
       const photoObj={b64};
@@ -1320,4 +1334,4 @@ document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click
 window.addEventListener('load',init);
 </script>
 </body>
-</html>
+</html>v
