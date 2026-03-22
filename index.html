@@ -599,6 +599,7 @@ async function init() {
       if (r.whatsapp) document.getElementById('profile-wa-input').value = r.whatsapp;
       if (r.photo) {
         document.getElementById('profile-photo-inner').innerHTML = `<img src="${r.photo}" alt="">`;
+        document.getElementById('cl-list-avatar').innerHTML = `<img src="${r.photo}" alt="">`;
       }
       loadClList();
     }
@@ -1140,9 +1141,9 @@ function onPhoto(e,side){
   rd.onload=ev=>{
     const d=ev.target.result,b64=d.split(',')[1];
     if(side==='profile'){
-      profilePhotoB64=b64;
+      profilePhotoB64=d; // store full data URL including mime prefix
       document.getElementById('profile-photo-inner').innerHTML=`<img src="${d}" alt="">`;
-      toast('📷 Foto selecionada — salve o perfil!');
+      toast('📷 Foto selecionada — toque em Salvar!');
     }else{
       const photoObj={b64};
       if(side==='cl'){clPhoto=photoObj;document.getElementById('cl-pthumb').src=d;document.getElementById('cl-pbar').style.display='flex';document.getElementById('cl-bsend').disabled=false;}
