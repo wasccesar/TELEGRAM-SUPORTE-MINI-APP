@@ -379,9 +379,11 @@ html,body{height:100%;font-family:'Nunito',sans-serif;font-size:15px;overflow:hi
     </div>
     <div class="cl-form">
       <label class="cl-flabel">Selecionar produto</label>
-      <div id="cl-product-list" style="margin-bottom:4px">
-        <div style="text-align:center;padding:20px;color:var(--cl-text3)"><div class="spin" style="margin:0 auto"></div></div>
-      </div>
+      <button id="cl-product-btn" onclick="openProductSelector()" style="width:100%;padding:14px;border-radius:12px;border:2px solid var(--cl-border);background:#fff;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;color:var(--cl-text2);cursor:pointer;text-align:left;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between;margin-bottom:4px" id="cl-product-btn">
+        <span id="cl-product-label">Toque para selecionar...</span>
+        <span style="font-size:18px">📦 ›</span>
+      </button>
+      <div id="cl-product-list" style="display:none"></div>
       <label class="cl-flabel">Categoria do problema</label>
       <div class="cl-cat-grid">
         <button class="cl-cat-btn" data-c="produto" onclick="clSelCat(this)"><span class="em">📦</span>Produto</button>
@@ -519,6 +521,17 @@ html,body{height:100%;font-family:'Nunito',sans-serif;font-size:15px;overflow:hi
     <div class="at-scroll" id="at-agents-area"><div class="empty"><div class="spin"></div></div></div>
   </div>
 
+</div>
+
+<!-- Product Selector Modal -->
+<div class="modal-overlay" id="product-selector-modal">
+  <div class="modal-sheet" style="max-height:75vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="modal-title" style="margin:0">Selecionar Produto</div>
+      <button onclick="closeModal()" style="background:none;border:none;color:var(--at-text2);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div id="product-selector-list" style="overflow-y:auto;flex:1"></div>
+  </div>
 </div>
 
 <!-- Product Permissions Modal -->
@@ -723,42 +736,68 @@ async function loadProducts(){
   try{
     const d = await GET('/products');
     allProducts = d.products || [];
-    const area = document.getElementById('cl-product-list');
-    if(!allProducts.length){
-      area.innerHTML='<div style="font-size:13px;color:var(--cl-text3);padding:8px 0">Nenhum produto cadastrado</div>';
-      return;
-    }
-    area.innerHTML = allProducts.map(p =>
-      `<button class="cl-cat-btn" style="width:100%;margin-bottom:6px;flex-direction:row;justify-content:flex-start;gap:10px;text-align:left" data-pid="${p.id}" onclick="clSelProduct(this)">
-        <span style="font-size:16px">📦</span>
-        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
-      </button>`
-    ).join('') + `<button class="cl-cat-btn" style="width:100%;margin-bottom:6px;flex-direction:row;justify-content:flex-start;gap:10px" data-pid="" onclick="clSelProduct(this)">
-      <span style="font-size:16px">❓</span><span>Outro / Não listado</span>
-    </button>`;
   }catch(e){
-    document.getElementById('cl-product-list').innerHTML='<div style="font-size:13px;color:var(--cl-text3)">Erro ao carregar produtos</div>';
+    console.error('Products error:', e);
   }
 }
 
-function clSelProduct(btn){
-  document.querySelectorAll('#cl-product-list .cl-cat-btn').forEach(b=>b.classList.remove('sel'));
-  btn.classList.add('sel');
-  selectedProduct = btn.dataset.pid ? allProducts.find(p=>p.id===btn.dataset.pid) : null;
+function openProductSelector(){
+  const list = document.getElementById('product-selector-list');
+  if(!allProducts.length){
+    list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--at-text2)">Carregando produtos...<br><div class="spin" style="margin:12px auto"></div></div>';
+    GET('/products').then(d => {
+      allProducts = d.products || [];
+      renderProductSelector();
+    }).catch(() => {
+      list.innerHTML = '<div style="text-align:center;padding:24px;color:#fca5a5">❌ Erro ao carregar produtos</div>';
+    });
+  } else {
+    renderProductSelector();
+  }
+  document.getElementById('product-selector-modal').classList.add('show');
+}
+
+function renderProductSelector(){
+  const list = document.getElementById('product-selector-list');
+  let html = allProducts.map(p => {
+    const periodBadge = p.period ? `<span style="font-size:11px;font-weight:700;color:var(--purple);background:rgba(124,29,186,.1);padding:2px 7px;border-radius:10px">${p.period}</span>` : '';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;border:1px solid var(--at-border);background:var(--at-card);margin-bottom:8px;cursor:pointer" data-pid="'+p.id+'" data-name="'+esc(p.name)+'" data-period="'+(p.period||'')+'" onclick="clSelProduct(this)">'
+      +'<span style="font-size:20px">📦</span>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-weight:800;color:var(--at-text1);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(p.name)+'</div>'
+      +(p.period ? '<div style="margin-top:2px">'+periodBadge+'</div>' : '')
+      +'</div>'
+      +'</div>';
+  }).join('');
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;border:1px solid var(--at-border);background:var(--at-card);margin-bottom:8px;cursor:pointer" data-pid="" data-name="Outro" data-period="" onclick="clSelProduct(this)">'
+    +'<span style="font-size:20px">❓</span>'
+    +'<div style="font-weight:800;color:var(--at-text1);font-size:14px">Outro / Não listado</div>'
+    +'</div>';
+  list.innerHTML = html;
+}
+
+function clSelProduct(el){
+  const pid = el.dataset.pid;
+  const pname = el.dataset.name;
+  const pperiod = el.dataset.period;
+  selectedProduct = pid ? { id: pid, name: pname, period: pperiod } : null;
+  const label = pid ? (pname + (pperiod ? ' · ' + pperiod : '')) : 'Outro / Não listado';
+  document.getElementById('cl-product-label').textContent = label;
+  document.getElementById('cl-product-btn').style.borderColor = 'var(--cl-header)';
+  document.getElementById('cl-product-btn').style.color = 'var(--cl-header)';
+  closeModal();
   clChkCreate();
 }
 function clSelCat(btn){document.querySelectorAll('.cl-cat-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');clCat=btn.dataset.c;clChkCreate();}
 function clChkCreate(){
-  const productSelected = document.querySelector('#cl-product-list .cl-cat-btn.sel');
-  document.getElementById('cl-btn-create').disabled=!productSelected||!clCat||!document.getElementById('cl-desc').value.trim();
+  document.getElementById('cl-btn-create').disabled = !selectedProduct || !clCat || !document.getElementById('cl-desc').value.trim();
 }
 document.getElementById('cl-desc').addEventListener('input',clChkCreate);
 
 async function clCreateTicket(){
   const desc=document.getElementById('cl-desc').value.trim();
-  const productSelected = document.querySelector('#cl-product-list .cl-cat-btn.sel');
-  const prodName = selectedProduct ? selectedProduct.name : (productSelected ? 'Outro' : null);
-  if(!productSelected||!clCat||!desc)return;
+  if(!selectedProduct||!clCat||!desc)return;
+  const prodName = selectedProduct.id ? (selectedProduct.name + (selectedProduct.period ? ' · ' + selectedProduct.period : '')) : null;
   const btn=document.getElementById('cl-btn-create');
   btn.disabled=true;btn.textContent='Enviando…';
   try{
@@ -766,7 +805,9 @@ async function clCreateTicket(){
     toast('✅ Chamado aberto!');
     document.getElementById('cl-desc').value='';document.getElementById('cl-product').value='';
     document.querySelectorAll('.cl-cat-btn').forEach(b=>b.classList.remove('sel'));
-    document.querySelectorAll('#cl-product-list .cl-cat-btn').forEach(b=>b.classList.remove('sel'));
+    document.getElementById('cl-product-label').textContent = 'Toque para selecionar...';
+    document.getElementById('cl-product-btn').style.borderColor = '';
+    document.getElementById('cl-product-btn').style.color = '';
     clCat=null;selectedProduct=null;clChkCreate();
     setTimeout(()=>clOpenTicket(d.ticketId),600);
   }catch(e){toast('❌ '+e.message);btn.disabled=false;btn.textContent='Abrir Chamado 📨';}
