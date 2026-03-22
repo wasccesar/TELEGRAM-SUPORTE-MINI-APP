@@ -652,7 +652,7 @@ function clRenderCard(t) {
   const unread=t.unread>0?`<span class="cl-tbadge">${t.unread}</span>`:'';
   const avHtml = t.user_photo ? '<img src="'+t.user_photo+'" alt="">' : (cats[t.category]||'❓');
   const prodSuffix = t.product_related ? ' · '+esc(t.product_related) : '';
-  return '<div class="cl-ticket-item" onclick="clOpenTicket(''+t.id+'')"><div class="cl-tav s-'+t.status+'">'+avHtml+'</div>'
+  return '<div class="cl-ticket-item" data-id="'+t.id+'" onclick="clOpenTicket(this.dataset.id)"><div class="cl-tav s-'+t.status+'">'+avHtml+'</div>'
     +'<div class="cl-tmain"><div class="cl-tname"><b>'+(catsFull[t.category]||'Outro')+prodSuffix+'</b><span>'+time+'</span></div>'
     +'<div class="cl-tprev">'+stEmoji(t.status)+' '+esc(prev)+'</div></div>'+unread+'</div>';
 }
@@ -832,7 +832,7 @@ function atRenderCard(t){
   const atAvHtml = t.user_photo ? '<img src="'+t.user_photo+'" alt="">' : (cats[t.category]||'👤');
   const atProdSuffix = t.product_related ? ' · '+esc(t.product_related) : '';
   const assignedHtml = t.assigned_name ? '<span style="font-size:11px;color:var(--at-text2);font-weight:700">👤 '+esc(t.assigned_name)+'</span>' : '';
-  return '<div class="at-tcard s-'+t.status+'" onclick="atOpenTicket(''+t.id+'')">'
+    return '<div class="at-tcard s-'+t.status+'" data-id="'+t.id+'" onclick="atOpenTicket(this.dataset.id)">'
     +'<div class="at-tcav">'+atAvHtml+'</div><div class="at-tcbody">'
     +'<div class="at-tcrow1"><span class="at-tcname">'+esc(t.user_name||'Usuário')+' <span style="font-size:11px;color:var(--at-text3)">ID:'+t.user_id+'</span></span><span class="at-tctime">'+time+'</span></div>'
     +'<div class="at-tcprev">'+(catsFull[t.category]||'Outro')+atProdSuffix+'</div>'
