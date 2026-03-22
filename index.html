@@ -650,14 +650,11 @@ function clRenderCard(t) {
   const time=fmtTime(t.last_message_time||t.created_at);
   const prev=t.last_message?(t.last_message.length>40?t.last_message.slice(0,40)+'…':t.last_message):'Sem mensagens';
   const unread=t.unread>0?`<span class="cl-tbadge">${t.unread}</span>`:'';
-  return `<div class="cl-ticket-item" onclick="clOpenTicket('${t.id}')">
-    <div class="cl-tav s-${t.status}">${t.user_photo?`<img src="${t.user_photo}" alt="">`:cats[t.category]||'❓'}</div>
-    <div class="cl-tmain">
-      <div class="cl-tname"><b>${catsFull[t.category]||'Outro'}${t.product_related?` · ${t.product_related}`:''}</b><span>${time}</span></div>
-      <div class="cl-tprev">${stEmoji(t.status)} ${esc(prev)}</div>
-    </div>
-    ${unread}
-  </div>`;
+  const avHtml = t.user_photo ? '<img src="'+t.user_photo+'" alt="">' : (cats[t.category]||'❓');
+  const prodSuffix = t.product_related ? ' · '+esc(t.product_related) : '';
+  return '<div class="cl-ticket-item" onclick="clOpenTicket(''+t.id+'')"><div class="cl-tav s-'+t.status+'">'+avHtml+'</div>'
+    +'<div class="cl-tmain"><div class="cl-tname"><b>'+(catsFull[t.category]||'Outro')+prodSuffix+'</b><span>'+time+'</span></div>'
+    +'<div class="cl-tprev">'+stEmoji(t.status)+' '+esc(prev)+'</div></div>'+unread+'</div>';
 }
 
 function stEmoji(s){return{open:'🔴',in_progress:'🟡',resolved:'🟢',closed:'⚫'}[s]||'⚪'}
@@ -832,15 +829,16 @@ function atRenderCard(t){
   const prev=t.last_message?(t.last_message.length>45?t.last_message.slice(0,45)+'…':t.last_message):'';
   const unread=t.unread>0?`<span class="at-bunread">${t.unread}</span>`:'';
   const stBadge=`<span class="at-badge ${t.status==='open'?'at-b-open':t.status==='in_progress'?'at-b-prog':'at-b-done'}">${stEmoji(t.status)} ${t.status==='open'?'Aguardando':t.status==='in_progress'?'Atendendo':'Resolvido'}</span>`;
-  return `<div class="at-tcard s-${t.status}" onclick="atOpenTicket('${t.id}')">
-    <div class="at-tcav">${t.user_photo?`<img src="${t.user_photo}" alt="">`:cats[t.category]||'👤'}</div>
-    <div class="at-tcbody">
-      <div class="at-tcrow1"><span class="at-tcname">${esc(t.user_name||'Usuário')} <span style="font-size:11px;color:var(--at-text3)">ID:${t.user_id}</span></span><span class="at-tctime">${time}</span></div>
-      <div class="at-tcprev">${catsFull[t.category]||'Outro'}${t.product_related?` · ${t.product_related}`:''}</div>
-      <div class="at-tcprev">${esc(prev)}</div>
-      <div class="at-tcmeta">${stBadge}${t.assigned_name?`<span style="font-size:11px;color:var(--at-text2);font-weight:700">👤 ${t.assigned_name}</span>`:''}<span style="font-size:11px;color:var(--at-text2);font-weight:700">💬 ${t.messages_count}</span>${unread}</div>
-    </div>
-  </div>`;
+  const atAvHtml = t.user_photo ? '<img src="'+t.user_photo+'" alt="">' : (cats[t.category]||'👤');
+  const atProdSuffix = t.product_related ? ' · '+esc(t.product_related) : '';
+  const assignedHtml = t.assigned_name ? '<span style="font-size:11px;color:var(--at-text2);font-weight:700">👤 '+esc(t.assigned_name)+'</span>' : '';
+  return '<div class="at-tcard s-'+t.status+'" onclick="atOpenTicket(''+t.id+'')">'
+    +'<div class="at-tcav">'+atAvHtml+'</div><div class="at-tcbody">'
+    +'<div class="at-tcrow1"><span class="at-tcname">'+esc(t.user_name||'Usuário')+' <span style="font-size:11px;color:var(--at-text3)">ID:'+t.user_id+'</span></span><span class="at-tctime">'+time+'</span></div>'
+    +'<div class="at-tcprev">'+(catsFull[t.category]||'Outro')+atProdSuffix+'</div>'
+    +'<div class="at-tcprev">'+esc(prev)+'</div>'
+    +'<div class="at-tcmeta">'+stBadge+assignedHtml+'<span style="font-size:11px;color:var(--at-text2);font-weight:700">💬 '+t.messages_count+'</span>'+unread+'</div>'
+    +'</div></div>';
 }
 
 async function atOpenTicket(id){
@@ -945,28 +943,7 @@ async function loadAgents(){
 
     if(!agentsList.length){html+='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Nenhum agente</div><div class="empty-s">Adicione atendentes acima</div></div>';}
     else{
-      html+=agentsList.map(ag=>{
-        const perms = ag.product_permissions;
-        const permLabel = perms === null ? '📦 Todos os produtos' : (perms && perms.length ? `📦 ${perms.length} produto(s)` : '⛔ Nenhum produto');
-        return `<div class="agent-card" style="flex-direction:column;align-items:stretch;gap:8px">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div class="agent-av">👤</div>
-            <div class="agent-info">
-              <div class="agent-name">${esc(ag.name)}${ag.is_admin?` <span style="font-size:10px;color:#e040fb;font-weight:800">ADMIN</span>`:''}</div>
-              <div class="agent-meta">🆔 ${ag.id} · 🎫 ${ag.tickets_attended} tickets${ag.active?'':" · <span style='color:#fca5a5'>Inativo</span>"}</div>
-              <div class="agent-meta" style="color:var(--at-text1);margin-top:2px">${permLabel}</div>
-            </div>
-            <div class="agent-actions">
-              <button class="agent-toggle ${ag.active?'on':''}" onclick="toggleAgent('${ag.id}',${!ag.active})">${ag.active?'✅':'⭕'}</button>
-              <button class="agent-toggle" onclick="toggleNotify('${ag.id}',${!ag.notify})">${ag.notify?'🔔':'🔕'}</button>
-              ${ag.is_admin?'':'<button class="agent-toggle danger" onclick="removeAgent(''+ag.id+'')">🗑️</button>'}
-            </div>
-          </div>
-          <button class="at-hbtn" style="text-align:left;padding:8px 12px" onclick="openProductPerms('${ag.id}','${esc(ag.name)}',${JSON.stringify(perms)})">
-            ⚙️ Permissões de Produto
-          </button>
-        </div>`;
-      }).join('');
+      html += agentsList.map(ag => renderAgentCard(ag)).join('');
     }
     a.innerHTML=html;
   }catch(e){a.innerHTML=`<div class="empty"><div class="empty-ico">⚠️</div><div class="empty-t">Erro</div><div class="empty-s">${e.message}</div></div>`;}
@@ -1005,6 +982,32 @@ function closeModal(){document.querySelectorAll('.modal-overlay').forEach(m=>m.c
 
 let editingAgentId = null;
 let editingAgentPerms = null;
+
+function renderAgentCard(ag) {
+  const perms = ag.product_permissions;
+  const permLabel = perms === null ? '📦 Todos os produtos' : (perms && perms.length ? '📦 '+perms.length+' produto(s)' : '⛔ Nenhum produto');
+  const adminBadge = ag.is_admin ? ' <span style="font-size:10px;color:#e040fb;font-weight:800">ADMIN</span>' : '';
+  const inactiveBadge = ag.active ? '' : " · <span style='color:#fca5a5'>Inativo</span>";
+  const removeBtn = ag.is_admin ? '' : '<button class="agent-toggle danger" onclick="removeAgent(\''+ag.id+'\')">🗑️</button>';
+  const activeClass = ag.active ? 'on' : '';
+  
+  let card = '<div class="agent-card" style="flex-direction:column;align-items:stretch;gap:8px">';
+  card += '<div style="display:flex;align-items:center;gap:12px">';
+  card += '<div class="agent-av">👤</div>';
+  card += '<div class="agent-info">';
+  card += '<div class="agent-name">'+esc(ag.name)+adminBadge+'</div>';
+  card += '<div class="agent-meta">🆔 '+ag.id+' · 🎫 '+ag.tickets_attended+' tickets'+inactiveBadge+'</div>';
+  card += '<div class="agent-meta" style="color:var(--at-text1);margin-top:2px">'+permLabel+'</div>';
+  card += '</div>';
+  card += '<div class="agent-actions">';
+  card += '<button class="agent-toggle '+activeClass+'" onclick="toggleAgent(\''+ag.id+'\','+(!ag.active)+')">'+( ag.active?'✅':'⭕')+'</button>';
+  card += '<button class="agent-toggle" onclick="toggleNotify(\''+ag.id+'\','+(!ag.notify)+')">'+( ag.notify?'🔔':'🔕')+'</button>';
+  card += removeBtn;
+  card += '</div></div>';
+  card += '<button class="at-hbtn" style="text-align:left;padding:8px 12px" onclick="openProductPerms(\''+ag.id+'\',\''+esc(ag.name)+'\','+JSON.stringify(perms)+')">⚙️ Permissões de Produto</button>';
+  card += '</div>';
+  return card;
+}
 
 async function openProductPerms(agentId, agentName, currentPerms){
   editingAgentId = agentId;
