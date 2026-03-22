@@ -312,6 +312,8 @@ html,body{height:100%;font-family:Nunito,sans-serif;font-size:15px;overflow:hidd
 /* Datesep (attendant) */
 .at-datesep{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:11px;color:var(--at-text3);font-weight:800;text-transform:uppercase;letter-spacing:.8px}
 .at-datesep::before,.at-datesep::after{content:'';flex:1;height:1px;background:var(--at-border)}
+.sys-msg{text-align:center;padding:4px 10px;font-size:11px;font-weight:700;color:var(--at-text3);background:rgba(255,255,255,.04);border-radius:8px;margin:4px auto;max-width:80%}
+.cl-sys-msg{text-align:center;padding:4px 10px;font-size:11px;font-weight:700;color:var(--cl-text2);background:rgba(0,0,0,.06);border-radius:8px;margin:4px auto;max-width:80%}
 
 /* Toast */
 .toast{position:fixed;top:64px;left:50%;transform:translateX(-50%) translateY(-14px);padding:8px 18px;border-radius:24px;font-size:13px;font-weight:800;z-index:9999;opacity:0;transition:all .25s ease;pointer-events:none;white-space:nowrap}
@@ -495,6 +497,13 @@ html,body{height:100%;font-family:Nunito,sans-serif;font-size:15px;overflow:hidd
     <div class="at-tinfo" id="at-tinfo"></div>
     <div class="at-msgs" id="at-msgs"></div>
     <div class="at-actrow" id="at-actrow"></div>
+    <div id="qr-panel" style="display:none;max-height:200px;overflow-y:auto;border-top:1px solid var(--at-border);background:var(--at-bg2);flex-shrink:0">
+      <div style="padding:8px 14px 4px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:11px;font-weight:800;color:var(--at-text2);text-transform:uppercase;letter-spacing:.8px">⚡ Respostas Rápidas</span>
+        <button onclick="showV('vat-qr')" style="background:none;border:none;color:#e040fb;font-size:12px;font-weight:800;cursor:pointer">+ Gerenciar</button>
+      </div>
+      <div id="qr-list" style="padding:0 8px 8px"></div>
+    </div>
     <div class="pbar" id="at-pbar" style="display:none">
       <img id="at-pthumb" class="pthumb" src="" alt="">
       <div class="pinfo" style="color:var(--at-text2)">Foto selecionada</div>
@@ -504,6 +513,7 @@ html,body{height:100%;font-family:Nunito,sans-serif;font-size:15px;overflow:hidd
       <div class="at-iwrap">
         <textarea class="at-ifield" id="at-msginput" placeholder="Digite sua resposta..." rows="1" oninput="autoR(this);updSend('at')" onkeydown="onKey(event,'at')"></textarea>
         <button class="at-bico" onclick="pickPhoto('at')">📎</button>
+        <button class="at-bico" onclick="toggleQuickReplies()" id="qr-btn" title="Respostas rápidas">⚡</button>
       </div>
       <button class="at-bsend" id="at-bsend" onclick="sendMsg('at')" disabled>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -524,6 +534,19 @@ html,body{height:100%;font-family:Nunito,sans-serif;font-size:15px;overflow:hidd
     <div class="at-scroll" id="at-agents-area"><div class="empty"><div class="spin"></div></div></div>
   </div>
 
+</div>
+
+<!-- Quick Replies Management View -->
+<div id="vat-qr" class="view at-body">
+  <div class="at-header">
+    <button class="at-back" onclick="showV('vat-chat');loadAtChat()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="at-hinfo"><div class="at-htitle">Respostas Rápidas</div><div class="at-hsub">⚡ Suas atalhos de texto</div></div>
+  </div>
+  <div class="at-scroll" id="qr-manage-area">
+    <div class="empty"><div class="spin"></div></div>
+  </div>
 </div>
 
 <!-- AI Config View -->
@@ -651,6 +674,7 @@ function showV(n) {
   document.querySelectorAll('.view').forEach(v=>{v.classList.remove('active');v.classList.add('out');setTimeout(()=>v.classList.remove('out'),320);});
   const el=document.getElementById(n); el.classList.remove('out');
   setTimeout(()=>el.classList.add('active'),10);
+  if(n==='vat-qr') loadQRManage();
 }
 
 // ── CLIENT: LIST ───────────────────────────────
@@ -730,7 +754,11 @@ function clRenderChat(t) {
     const mt=new Date(m.timestamp).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     if(md!==pDate){if(gOpen){html+='</div>';gOpen=false;}html+=`<div class="cl-datesep"><div class="cl-datelabel">${md===new Date().toLocaleDateString('pt-BR')?'Hoje':md}</div></div>`;pFrom=null;pDate=md;}
     if(m.from!==pFrom){if(gOpen)html+='</div>';const who=isMe?`${userData.name||TGU.first_name||'Você'}`:`${m.from_name||t.assigned_name||'Atendente'}`;html+=`<div class="cl-bgroup ${isMe?'mine':'theirs'}"><div class="cl-bname">${who}</div>`;gOpen=true;pFrom=m.from;}
-    html+=`<div class="cl-bubble">${m.photo_id?'📷 <em>Imagem</em>':esc(m.text)}<span class="cl-btime">${mt}</span></div>`;
+    if(m.is_system||m.from==='SYSTEM'){
+      html+=`<div class="cl-sys-msg">${esc(m.text)}</div>`;
+    } else {
+      html+=`<div class="cl-bubble">${m.photo_id?'📷 <em>Imagem</em>':esc(m.text)}<span class="cl-btime">${mt}</span></div>`;
+    }
   });
   if(gOpen)html+='</div>';
   area.innerHTML=html;
@@ -920,6 +948,7 @@ async function atOpenTicket(id){
   document.getElementById('at-actrow').innerHTML='';
   document.getElementById('at-ibar').style.display='none';
   await loadAtChat(); startPoll('at');
+  loadQuickRepliesPanel();
 }
 
 async function loadAtChat(){
@@ -959,7 +988,15 @@ function atRenderChat(t){
       const mt=new Date(m.timestamp).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       if(md!==pDate){if(gOpen){html+='</div>';gOpen=false;}html+=`<div class="at-datesep">${md===new Date().toLocaleDateString('pt-BR')?'Hoje':md}</div>`;pFrom=null;pDate=md;}
       if(m.from!==pFrom){if(gOpen)html+='</div>';const who=isMe?`🧑‍💼 ${userData.name||TGU.first_name||'Você'}`:`🧑 ${m.from_name||t.user_name||'Cliente'}`;html+=`<div class="at-bgroup ${isMe?'mine':'theirs'}"><div class="at-bname">${who}</div>`;gOpen=true;pFrom=m.from;}
-      html+=`<div class="at-bubble">${m.photo_id?'📷 <em>Imagem</em>':esc(m.text)}<span class="at-btime">${mt}</span></div>`;
+      if(m.is_system||m.from==='SYSTEM'){
+        html+=`<div class="sys-msg">${esc(m.text)}</div>`;
+      } else {
+        if(m.is_system||m.from==='SYSTEM'){
+        html+=`<div class="sys-msg">${esc(m.text)}</div>`;
+      } else {
+        html+=`<div class="at-bubble">${m.photo_id?'📷 <em>Imagem</em>':esc(m.text)}<span class="at-btime">${mt}</span></div>`;
+      }
+      }
     });
     if(gOpen)html+='</div>';
     area.innerHTML=html;
@@ -1000,6 +1037,7 @@ function atLeaveChat(){stopPoll();ticketId=null;showV('vat-dash');loadAtDash();}
 function goAgents(){showV('vat-agents');loadAgents();}
 
 function goAiConfig(){showV('vat-ai');loadAiConfig();}
+function goQRManage(){showV('vat-qr');loadQRManage();}
 
 async function loadAiConfig(){
   const area = document.getElementById('ai-config-area');
@@ -1045,6 +1083,101 @@ async function loadAiConfig(){
     
     area.innerHTML = html;
   }catch(e){area.innerHTML='<div class="empty"><div class="empty-ico">⚠️</div><div class="empty-t">Erro</div><div class="empty-s">'+e.message+'</div></div>';}
+}
+
+// ── QUICK REPLIES ─────────────────────────────
+let quickReplies = [];
+
+async function loadQuickRepliesPanel(){
+  try{
+    const d = await GET('/quick-replies?userId='+TGU.id);
+    quickReplies = d.replies || [];
+    renderQRPanel();
+  }catch(e){ console.error('QR load error:', e); }
+}
+
+function renderQRPanel(){
+  const list = document.getElementById('qr-list');
+  if(!quickReplies.length){
+    list.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--at-text3)">Nenhuma resposta rápida. Toque em Gerenciar para adicionar.</div>';
+    return;
+  }
+  list.innerHTML = quickReplies.map(r =>
+    '<button style="display:block;width:100%;text-align:left;padding:9px 12px;border-radius:8px;border:1px solid var(--at-border);background:var(--at-card);margin-bottom:6px;cursor:pointer;color:var(--at-text1);font-family:Nunito,sans-serif;font-size:13px;font-weight:600" onclick="useQuickReply('+JSON.stringify(r.text)+')">'
+    +'<span style="font-weight:800;color:#e040fb">'+esc(r.title)+'</span> — '+esc(r.text.slice(0,50))+(r.text.length>50?'…':'')+'</button>'
+  ).join('');
+}
+
+function toggleQuickReplies(){
+  const panel = document.getElementById('qr-panel');
+  const isOpen = panel.style.display !== 'none';
+  if(!isOpen){
+    panel.style.display = 'block';
+    loadQuickRepliesPanel();
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function useQuickReply(text){
+  document.getElementById('at-msginput').value = text;
+  autoR(document.getElementById('at-msginput'));
+  updSend('at');
+  document.getElementById('qr-panel').style.display = 'none';
+}
+
+async function loadQRManage(){
+  const area = document.getElementById('qr-manage-area');
+  area.innerHTML = '<div class="empty"><div class="spin"></div></div>';
+  try{
+    const d = await GET('/quick-replies?userId='+TGU.id);
+    quickReplies = d.replies || [];
+    let html = '<div class="at-slabel">Nova Resposta Rápida</div>';
+    html += '<div class="add-agent-form">';
+    html += '<input id="qr-new-title" placeholder="Atalho (ex: boas_vindas)" style="margin-bottom:8px">';
+    html += '<textarea id="qr-new-text" placeholder="Texto da resposta..." style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--at-border);border-radius:8px;padding:10px;color:var(--at-text1);font-family:Nunito,sans-serif;font-size:13px;outline:none;resize:none;min-height:80px;line-height:1.5;margin-bottom:8px"></textarea>';
+    if(isAdmin){ html += '<label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;color:var(--at-text2);cursor:pointer"><input type="checkbox" id="qr-global"> Disponível para todos os atendentes</label>'; }
+    html += '<button class="at-btn-add" onclick="addQR()">⚡ Adicionar</button>';
+    html += '</div>';
+    
+    if(quickReplies.length){
+      html += '<div class="at-slabel">Suas Respostas ('+quickReplies.length+')</div>';
+      html += quickReplies.map(r => {
+        const globalBadge = r.global ? '<span style="font-size:10px;background:rgba(124,29,186,.2);color:#e040fb;padding:1px 6px;border-radius:8px;font-weight:800">GLOBAL</span>' : '';
+        return '<div class="agent-card" style="flex-direction:column;align-items:stretch;gap:6px">'
+          +'<div style="display:flex;align-items:center;justify-content:space-between">'
+          +'<span style="font-weight:800;color:var(--at-text1);font-size:13px">'+esc(r.title)+' '+globalBadge+'</span>'
+          +'<button class="agent-toggle danger" onclick="deleteQR(this.dataset.qid)" data-qid="'+r.id+'>🗑️</button>'
+          +'</div>'
+          +'<div style="font-size:12px;color:var(--at-text2)">'+esc(r.text.slice(0,100))+(r.text.length>100?'…':'')+'</div>'
+          +'</div>';
+      }).join('');
+    } else {
+      html += '<div class="empty" style="flex:none;padding:20px"><div class="empty-ico" style="font-size:32px">⚡</div><div class="empty-t">Nenhuma resposta ainda</div></div>';
+    }
+    area.innerHTML = html;
+  }catch(e){ area.innerHTML='<div class="empty"><div class="empty-t">Erro ao carregar</div></div>'; }
+}
+
+async function addQR(){
+  const title = document.getElementById('qr-new-title').value.trim();
+  const text = document.getElementById('qr-new-text').value.trim();
+  const isGlobal = document.getElementById('qr-global')?.checked || false;
+  if(!title||!text){ toast('❌ Preencha o atalho e o texto'); return; }
+  try{
+    await POST('/quick-replies',{userId:TGU.id,title,text,isGlobal,initData:tg?.initData||''});
+    toast('✅ Resposta adicionada!');
+    loadQRManage();
+  }catch(e){ toast('❌ '+e.message); }
+}
+
+async function deleteQR(id){
+  if(!confirm('Remover esta resposta?')) return;
+  try{
+    await DEL('/quick-replies/'+id,{userId:TGU.id,initData:tg?.initData||''});
+    toast('✅ Removido!');
+    loadQRManage();
+  }catch(e){ toast('❌ '+e.message); }
 }
 
 async function toggleAI(current){
@@ -1334,4 +1467,4 @@ document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click
 window.addEventListener('load',init);
 </script>
 </body>
-</html>v
+</html>
