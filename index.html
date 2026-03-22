@@ -362,8 +362,9 @@ html,body{height:100%;font-family:'Nunito',sans-serif;font-size:15px;overflow:hi
       <button class="cl-header-back" onclick="goProfile()" title="Perfil">👤</button>
     </div>
     <div class="cl-tabs">
-      <button class="cl-tab active" data-s="open" onclick="clTab(this)">Abertos</button>
-      <button class="cl-tab" data-s="in_progress" onclick="clTab(this)">Em Atendimento</button>
+      <button class="cl-tab active" data-s="all" onclick="clTab(this)">Todos</button>
+      <button class="cl-tab" data-s="open" onclick="clTab(this)">Abertos</button>
+      <button class="cl-tab" data-s="in_progress" onclick="clTab(this)">Atendendo</button>
       <button class="cl-tab" data-s="resolved" onclick="clTab(this)">Resolvidos</button>
     </div>
     <div class="cl-scroll" id="cl-list-area"><div class="empty"><div class="spin"></div></div></div>
@@ -377,6 +378,10 @@ html,body{height:100%;font-family:'Nunito',sans-serif;font-size:15px;overflow:hi
       <div class="cl-hinfo"><div class="cl-htitle">Novo Chamado</div></div>
     </div>
     <div class="cl-form">
+      <label class="cl-flabel">Selecionar produto</label>
+      <div id="cl-product-list" style="margin-bottom:4px">
+        <div style="text-align:center;padding:20px;color:var(--cl-text3)"><div class="spin" style="margin:0 auto"></div></div>
+      </div>
       <label class="cl-flabel">Categoria do problema</label>
       <div class="cl-cat-grid">
         <button class="cl-cat-btn" data-c="produto" onclick="clSelCat(this)"><span class="em">📦</span>Produto</button>
@@ -384,8 +389,6 @@ html,body{height:100%;font-family:'Nunito',sans-serif;font-size:15px;overflow:hi
         <button class="cl-cat-btn" data-c="tecnico" onclick="clSelCat(this)"><span class="em">⚙️</span>Técnico</button>
         <button class="cl-cat-btn" data-c="outro" onclick="clSelCat(this)"><span class="em">❓</span>Outro</button>
       </div>
-      <label class="cl-flabel">Produto relacionado (opcional)</label>
-      <div class="cl-ibox"><input id="cl-product" type="text" placeholder="Ex: Chat GPT Pro, Canva..." style="width:100%;border:none;outline:none;font-family:'Nunito',sans-serif;font-size:14px;background:transparent"></div>
       <label class="cl-flabel">Descreva o problema</label>
       <div class="cl-ibox"><textarea id="cl-desc" placeholder="Explique com detalhes..." rows="4"></textarea></div>
       <button class="cl-btn-submit" id="cl-btn-create" onclick="clCreateTicket()" disabled>Abrir Chamado 📨</button>
@@ -439,6 +442,8 @@ html,body{height:100%;font-family:'Nunito',sans-serif;font-size:15px;overflow:hi
       <div class="profile-card">
         <div class="profile-card-title">Informações</div>
         <input class="profile-input" id="profile-name-input" type="text" placeholder="Seu nome de exibição">
+        <div style="margin:8px 0 4px;font-size:11px;font-weight:800;color:var(--cl-header);text-transform:uppercase;letter-spacing:.8px">WhatsApp (opcional)</div>
+        <input class="profile-input" id="profile-wa-input" type="tel" placeholder="Ex: 5511999999999">
         <button class="profile-save-btn" onclick="saveProfile()" style="background:var(--cl-header)">Salvar</button>
       </div>
       <div class="profile-card">
@@ -516,6 +521,16 @@ html,body{height:100%;font-family:'Nunito',sans-serif;font-size:15px;overflow:hi
 
 </div>
 
+<!-- Product Permissions Modal -->
+<div class="modal-overlay" id="product-perms-modal">
+  <div class="modal-sheet" style="max-height:80vh;overflow-y:auto">
+    <div class="modal-title" id="product-perms-title">Permissões</div>
+    <div id="product-perms-list"></div>
+    <button class="modal-btn primary" onclick="saveProductPerms()">💾 Salvar Permissões</button>
+    <button class="modal-btn secondary" onclick="closeModal()">Cancelar</button>
+  </div>
+</div>
+
 <!-- Transfer Modal -->
 <div class="modal-overlay" id="transfer-modal">
   <div class="modal-sheet">
@@ -581,6 +596,7 @@ async function init() {
       document.getElementById('cl-list-name').textContent = r.name || 'Meus Chamados';
       document.getElementById('profile-name-input').value = r.name || '';
       document.getElementById('profile-display-name').textContent = r.name || TGU.first_name;
+      if (r.whatsapp) document.getElementById('profile-wa-input').value = r.whatsapp;
       if (r.photo) {
         document.getElementById('profile-photo-inner').innerHTML = `<img src="${r.photo}" alt="">`;
       }
@@ -700,23 +716,60 @@ function clRenderChat(t) {
 function clLeaveChat() { stopPoll(); ticketId=null; showV('vcl-list'); loadClList(); }
 
 // ── CLIENT: NEW TICKET ─────────────────────────
-function goNewTicket(){showV('vcl-new');}
+function goNewTicket(){showV('vcl-new');loadProducts();}
+
+let allProducts = [];
+let selectedProduct = null;
+
+async function loadProducts(){
+  try{
+    const d = await GET('/products');
+    allProducts = d.products || [];
+    const area = document.getElementById('cl-product-list');
+    if(!allProducts.length){
+      area.innerHTML='<div style="font-size:13px;color:var(--cl-text3);padding:8px 0">Nenhum produto cadastrado</div>';
+      return;
+    }
+    area.innerHTML = allProducts.map(p =>
+      `<button class="cl-cat-btn" style="width:100%;margin-bottom:6px;flex-direction:row;justify-content:flex-start;gap:10px;text-align:left" data-pid="${p.id}" onclick="clSelProduct(this)">
+        <span style="font-size:16px">📦</span>
+        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
+      </button>`
+    ).join('') + `<button class="cl-cat-btn" style="width:100%;margin-bottom:6px;flex-direction:row;justify-content:flex-start;gap:10px" data-pid="" onclick="clSelProduct(this)">
+      <span style="font-size:16px">❓</span><span>Outro / Não listado</span>
+    </button>`;
+  }catch(e){
+    document.getElementById('cl-product-list').innerHTML='<div style="font-size:13px;color:var(--cl-text3)">Erro ao carregar produtos</div>';
+  }
+}
+
+function clSelProduct(btn){
+  document.querySelectorAll('#cl-product-list .cl-cat-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  selectedProduct = btn.dataset.pid ? allProducts.find(p=>p.id===btn.dataset.pid) : null;
+  clChkCreate();
+}
 function clSelCat(btn){document.querySelectorAll('.cl-cat-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');clCat=btn.dataset.c;clChkCreate();}
-function clChkCreate(){document.getElementById('cl-btn-create').disabled=!clCat||!document.getElementById('cl-desc').value.trim();}
+function clChkCreate(){
+  const productSelected = document.querySelector('#cl-product-list .cl-cat-btn.sel');
+  document.getElementById('cl-btn-create').disabled=!productSelected||!clCat||!document.getElementById('cl-desc').value.trim();
+}
 document.getElementById('cl-desc').addEventListener('input',clChkCreate);
 
 async function clCreateTicket(){
   const desc=document.getElementById('cl-desc').value.trim();
-  const prod=document.getElementById('cl-product').value.trim();
-  if(!clCat||!desc)return;
+  const productSelected = document.querySelector('#cl-product-list .cl-cat-btn.sel');
+  const prodName = selectedProduct ? selectedProduct.name : (productSelected ? 'Outro' : null);
+  if(!productSelected||!clCat||!desc)return;
   const btn=document.getElementById('cl-btn-create');
   btn.disabled=true;btn.textContent='Enviando…';
   try{
-    const d=await POST('/ticket',{userId:TGU.id,userName:userData.name||TGU.first_name||'Usuário',category:clCat,description:desc,productRelated:prod||null,initData:tg?.initData||''});
+    const d=await POST('/ticket',{userId:TGU.id,userName:userData.name||TGU.first_name||'Usuário',category:clCat,description:desc,productRelated:prodName,initData:tg?.initData||''});
     toast('✅ Chamado aberto!');
     document.getElementById('cl-desc').value='';document.getElementById('cl-product').value='';
     document.querySelectorAll('.cl-cat-btn').forEach(b=>b.classList.remove('sel'));
-    clCat=null;clChkCreate();
+    document.querySelectorAll('#cl-product-list .cl-cat-btn').forEach(b=>b.classList.remove('sel'));
+    clCat=null;selectedProduct=null;clChkCreate();
     setTimeout(()=>clOpenTicket(d.ticketId),600);
   }catch(e){toast('❌ '+e.message);btn.disabled=false;btn.textContent='Abrir Chamado 📨';}
 }
@@ -726,8 +779,9 @@ function goProfile(){showV('vcl-profile');}
 
 async function saveProfile(){
   const name=document.getElementById('profile-name-input').value.trim();
+  const wa=document.getElementById('profile-wa-input').value.trim();
   try{
-    await PUT('/profile',{userId:TGU.id,name:name||undefined,photo:profilePhotoB64||undefined,initData:tg?.initData||''});
+    await PUT('/profile',{userId:TGU.id,name:name||undefined,photo:profilePhotoB64||undefined,whatsapp:wa||undefined,initData:tg?.initData||''});
     userData.name=name;
     document.getElementById('cl-list-name').textContent=name||'Meus Chamados';
     document.getElementById('profile-display-name').textContent=name||TGU.first_name;
@@ -891,22 +945,28 @@ async function loadAgents(){
 
     if(!agentsList.length){html+='<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">Nenhum agente</div><div class="empty-s">Adicione atendentes acima</div></div>';}
     else{
-      html+=agentsList.map(ag=>`<div class="agent-card">
-        <div class="agent-av">👤</div>
-        <div class="agent-info">
-          <div class="agent-name">${esc(ag.name)}</div>
-          <div class="agent-meta">🆔 ${ag.id} · 🎫 ${ag.tickets_attended} tickets${ag.active?'':" · <span style='color:#fca5a5'>Inativo</span>"}</div>
-        </div>
-        <div class="agent-actions">
-          <button class="agent-toggle ${ag.active?'on':''}" onclick="toggleAgent('${ag.id}',${!ag.active})" title="${ag.active?'Desativar':'Ativar'}">
-            ${ag.active?'✅':'⭕'}
+      html+=agentsList.map(ag=>{
+        const perms = ag.product_permissions;
+        const permLabel = perms === null ? '📦 Todos os produtos' : (perms && perms.length ? `📦 ${perms.length} produto(s)` : '⛔ Nenhum produto');
+        return `<div class="agent-card" style="flex-direction:column;align-items:stretch;gap:8px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="agent-av">👤</div>
+            <div class="agent-info">
+              <div class="agent-name">${esc(ag.name)}${ag.is_admin?` <span style="font-size:10px;color:#e040fb;font-weight:800">ADMIN</span>`:''}</div>
+              <div class="agent-meta">🆔 ${ag.id} · 🎫 ${ag.tickets_attended} tickets${ag.active?'':" · <span style='color:#fca5a5'>Inativo</span>"}</div>
+              <div class="agent-meta" style="color:var(--at-text1);margin-top:2px">${permLabel}</div>
+            </div>
+            <div class="agent-actions">
+              <button class="agent-toggle ${ag.active?'on':''}" onclick="toggleAgent('${ag.id}',${!ag.active})">${ag.active?'✅':'⭕'}</button>
+              <button class="agent-toggle" onclick="toggleNotify('${ag.id}',${!ag.notify})">${ag.notify?'🔔':'🔕'}</button>
+              ${ag.is_admin?'':'<button class="agent-toggle danger" onclick="removeAgent(''+ag.id+'')">🗑️</button>'}
+            </div>
+          </div>
+          <button class="at-hbtn" style="text-align:left;padding:8px 12px" onclick="openProductPerms('${ag.id}','${esc(ag.name)}',${JSON.stringify(perms)})">
+            ⚙️ Permissões de Produto
           </button>
-          <button class="agent-toggle" onclick="toggleNotify('${ag.id}',${!ag.notify})" title="Notificações ${ag.notify?'on':'off'}">
-            ${ag.notify?'🔔':'🔕'}
-          </button>
-          <button class="agent-toggle danger" onclick="removeAgent('${ag.id}')" title="Remover">🗑️</button>
-        </div>
-      </div>`).join('');
+        </div>`;
+      }).join('');
     }
     a.innerHTML=html;
   }catch(e){a.innerHTML=`<div class="empty"><div class="empty-ico">⚠️</div><div class="empty-t">Erro</div><div class="empty-s">${e.message}</div></div>`;}
@@ -942,6 +1002,63 @@ async function removeAgent(id){
 // ── MODALS ─────────────────────────────────────
 function openResolveModal(){document.getElementById('resolve-modal').classList.add('show');}
 function closeModal(){document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('show'));}
+
+let editingAgentId = null;
+let editingAgentPerms = null;
+
+async function openProductPerms(agentId, agentName, currentPerms){
+  editingAgentId = agentId;
+  editingAgentPerms = currentPerms; // null = all, [] = none, [...ids] = specific
+  
+  try {
+    const d = await GET('/products');
+    const products = d.products || [];
+    if(!products.length){ toast('Nenhum produto cadastrado'); return; }
+    
+    const isAll = currentPerms === null;
+    let html = `<div style="margin-bottom:12px">
+      <button class="modal-btn ${isAll?'primary':'secondary'}" style="margin-bottom:6px" onclick="setAllProducts(true)">✅ Liberar todos os produtos</button>
+      <button class="modal-btn ${!isAll&&(!currentPerms||!currentPerms.length)?'primary':'secondary'}" style="margin-bottom:6px" onclick="setAllProducts(false)">⛔ Bloquear todos</button>
+    </div>
+    <div style="font-size:11px;font-weight:800;color:var(--at-text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Ou selecione individualmente:</div>`;
+    
+    html += products.map(p => {
+      const checked = isAll || (currentPerms && currentPerms.includes(p.id));
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--at-border);background:var(--at-card);margin-bottom:6px;cursor:pointer" onclick="toggleProductPerm('${p.id}',this)">
+        <span style="font-size:18px">${checked?'✅':'⬜'}</span>
+        <span style="font-size:13px;color:var(--at-text1);font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
+      </div>`;
+    }).join('');
+    
+    document.getElementById('product-perms-list').innerHTML = html;
+    document.getElementById('product-perms-title').textContent = agentName;
+    document.getElementById('product-perms-modal').classList.add('show');
+  } catch(e){ toast('❌ '+e.message); }
+}
+
+function setAllProducts(all){
+  editingAgentPerms = all ? null : [];
+  openProductPerms(editingAgentId, document.getElementById('product-perms-title').textContent, editingAgentPerms);
+}
+
+function toggleProductPerm(productId, el){
+  if(editingAgentPerms === null) editingAgentPerms = []; // switch from "all" to specific
+  const idx = editingAgentPerms.indexOf(productId);
+  if(idx >= 0) editingAgentPerms.splice(idx, 1);
+  else editingAgentPerms.push(productId);
+  // Update visual
+  const span = el.querySelector('span:first-child');
+  span.textContent = editingAgentPerms.includes(productId) ? '✅' : '⬜';
+}
+
+async function saveProductPerms(){
+  try{
+    await PUT('/agents/'+editingAgentId, {userId:TGU.id, product_permissions: editingAgentPerms, initData:tg?.initData||''});
+    toast('✅ Permissões salvas!');
+    closeModal();
+    loadAgents();
+  }catch(e){ toast('❌ '+e.message); }
+}
 async function confirmResolve(){
   const note=document.getElementById('resolve-note').value.trim();
   closeModal();
@@ -952,11 +1069,24 @@ async function confirmResolve(){
 async function openTransferModal(){
   try{
     const d=await GET(`/agents?userId=${TGU.id}`);
-    const agents=d.agents.filter(a=>a.active&&String(a.id)!==String(TGU.id));
-    let html=agents.map(a=>`<div class="transfer-item" onclick="doTransfer('${a.id}')">
-      <div class="agent-av" style="width:36px;height:36px;font-size:14px">👤</div>
-      <div><div style="font-weight:800;color:var(--at-text1)">${esc(a.name)}</div><div style="font-size:12px;color:var(--at-text2)">🆔 ${a.id} · 🎫 ${a.tickets_attended}</div></div>
-    </div>`).join('');
+    // Filter agents by product permissions if ticket has product
+    const ticketProd = ticket?.product_related;
+    let agents=d.agents.filter(a=>a.active&&String(a.id)!==String(TGU.id));
+    if(ticketProd){
+      agents = agents.filter(a => a.product_permissions === null || (a.product_permissions && a.product_permissions.some(pid => {
+        const prod = allProducts.find(p=>p.id===pid);
+        return prod && ticketProd.includes(prod.name.split('/')[0].trim().slice(0,15));
+      })));
+      if(!agents.length) agents = d.agents.filter(a=>a.active&&String(a.id)!==String(TGU.id));
+    }
+    let html=agents.map(a=>{
+      const canAll = a.product_permissions === null;
+      const prodCount = canAll ? 'Todos os produtos' : (a.product_permissions?.length ? a.product_permissions.length+' produto(s)' : 'Nenhum produto');
+      return `<div class="transfer-item" onclick="doTransfer('${a.id}')">
+        <div class="agent-av" style="width:36px;height:36px;font-size:14px">👤</div>
+        <div><div style="font-weight:800;color:var(--at-text1)">${esc(a.name)}</div><div style="font-size:12px;color:var(--at-text2)">🆔 ${a.id} · 📦 ${prodCount}</div></div>
+      </div>`;
+    }).join('');
     if(!html)html='<div style="color:var(--at-text2);text-align:center;padding:20px">Nenhum agente disponível</div>';
     document.getElementById('transfer-list').innerHTML=html;
     document.getElementById('transfer-modal').classList.add('show');
