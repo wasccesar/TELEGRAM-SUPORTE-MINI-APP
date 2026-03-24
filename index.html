@@ -497,23 +497,21 @@ html,body{height:100%;font-family:Nunito,sans-serif;font-size:15px;overflow:hidd
     <div class="at-tinfo" id="at-tinfo"></div>
     <div class="at-msgs" id="at-msgs"></div>
     <div class="at-actrow" id="at-actrow"></div>
-    <div id="qr-panel" style="display:none;max-height:200px;overflow-y:auto;border-top:1px solid var(--at-border);background:var(--at-bg2);flex-shrink:0">
-      <div style="padding:8px 14px 4px;display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:11px;font-weight:800;color:var(--at-text2);text-transform:uppercase;letter-spacing:.8px">⚡ Respostas Rápidas</span>
-        <button onclick="showV('vat-qr')" style="background:none;border:none;color:#e040fb;font-size:12px;font-weight:800;cursor:pointer">+ Gerenciar</button>
-      </div>
-      <div id="qr-list" style="padding:0 8px 8px"></div>
-    </div>
+
     <div class="pbar" id="at-pbar" style="display:none">
       <img id="at-pthumb" class="pthumb" src="" alt="">
       <div class="pinfo" style="color:var(--at-text2)">Foto selecionada</div>
       <button class="prm" onclick="rmPhoto('at')">✕</button>
     </div>
+    <div id="qr-autocomplete" style="display:none;position:absolute;bottom:64px;left:10px;right:10px;background:#1e2535;border:1px solid var(--at-border-lit);border-radius:12px;overflow:hidden;z-index:200;box-shadow:0 -4px 20px rgba(0,0,0,.4)">
+      <div style="padding:6px 12px;font-size:10px;font-weight:800;color:var(--at-text3);text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--at-border)">⚡ Respostas Rápidas</div>
+      <div id="qr-ac-list" style="max-height:180px;overflow-y:auto"></div>
+    </div>
     <div class="at-ibar" id="at-ibar">
       <div class="at-iwrap">
-        <textarea class="at-ifield" id="at-msginput" placeholder="Digite sua resposta..." rows="1" oninput="autoR(this);updSend('at')" onkeydown="onKey(event,'at')"></textarea>
+        <textarea class="at-ifield" id="at-msginput" placeholder="Digite sua resposta..." rows="1" oninput="autoR(this);updSend('at');checkQRAutocomplete(this.value)" onkeydown="onKeyAT(event)" onblur="setTimeout(()=>closeQRAC(),200)"></textarea>
         <button class="at-bico" onclick="pickPhoto('at')">📎</button>
-        <button class="at-bico" onclick="toggleQuickReplies()" id="qr-btn" title="Respostas rápidas">⚡</button>
+
       </div>
       <button class="at-bsend" id="at-bsend" onclick="sendMsg('at')" disabled>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -1108,23 +1106,42 @@ function renderQRPanel(){
   ).join('');
 }
 
-function toggleQuickReplies(){
-  const panel = document.getElementById('qr-panel');
-  const isOpen = panel.style.display !== 'none';
-  if(!isOpen){
-    panel.style.display = 'block';
-    loadQuickRepliesPanel();
-  } else {
-    panel.style.display = 'none';
-  }
+function closeQRAC(){ document.getElementById('qr-autocomplete').style.display='none'; }
+
+function checkQRAutocomplete(val){
+  const ac = document.getElementById('qr-autocomplete');
+  const list = document.getElementById('qr-ac-list');
+  if(!val.startsWith('/')){ ac.style.display='none'; return; }
+  const query = val.slice(1).toLowerCase();
+  const matches = quickReplies.filter(r => !query || r.title.toLowerCase().includes(query) || r.text.toLowerCase().includes(query));
+  if(!matches.length){ ac.style.display='none'; return; }
+  list.innerHTML = matches.map(r =>
+    '<div style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--at-border);transition:background .1s" onmousedown="useQRAC('+JSON.stringify(r.text)+')" style="hover:background:rgba(255,255,255,.05)">'
+    +'<span style="font-weight:800;color:#e040fb;font-size:13px">/'+esc(r.title)+'</span>'
+    +' <span style="color:var(--at-text2);font-size:12px">'+esc(r.text.slice(0,60))+(r.text.length>60?'…':'')+'</span>'
+    +'</div>'
+  ).join('');
+  ac.style.display='block';
 }
 
-function useQuickReply(text){
-  document.getElementById('at-msginput').value = text;
-  autoR(document.getElementById('at-msginput'));
+function useQRAC(text){
+  const inp = document.getElementById('at-msginput');
+  inp.value = text;
+  autoR(inp);
   updSend('at');
-  document.getElementById('qr-panel').style.display = 'none';
+  closeQRAC();
+  inp.focus();
 }
+
+function onKeyAT(e){
+  const ac = document.getElementById('qr-autocomplete');
+  if(ac.style.display !== 'none'){
+    if(e.key==='Escape'){ closeQRAC(); return; }
+  }
+  onKey(e,'at');
+}
+
+// Quick reply preloaded silently on chat open
 
 async function loadQRManage(){
   const area = document.getElementById('qr-manage-area');
